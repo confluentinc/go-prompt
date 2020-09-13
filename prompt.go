@@ -3,11 +3,9 @@ package prompt
 import (
 	"bytes"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/c-bata/go-prompt/internal/debug"
-	"github.com/google/uuid"
 )
 
 // Executor is called when user input something text.
@@ -25,18 +23,19 @@ type Completer func(Document) []Suggest
 
 // Prompt is core struct of go-prompt.
 type Prompt struct {
-	in                ConsoleParser
-	buf               *Buffer
-	renderer          *Render
-	executor          Executor
-	history           *History
-	completion        *CompletionManager
-	keyBindings       []KeyBind
-	ASCIICodeBindings []ASCIICodeBind
-	keyBindMode       KeyBindMode
-	completionOnDown  bool
-	exitChecker       ExitChecker
-	skipTearDown      bool
+	in                   ConsoleParser
+	buf                  *Buffer
+	renderer             *Render
+	executor             Executor
+	history              *History
+	completion           *CompletionManager
+	keyBindings          []KeyBind
+	ASCIICodeBindings    []ASCIICodeBind
+	keyBindMode          KeyBindMode
+	completionOnDown     bool
+	exitChecker          ExitChecker
+	skipTearDown         bool
+	maxCompletionLatency time.Duration
 }
 
 // Exec is the struct contains user input context.
@@ -52,11 +51,13 @@ func (p *Prompt) Run() {
 	p.setUp()
 	defer p.tearDown()
 
+	complCh := make(chan int)
 	if p.completion.showAtStart {
-		p.completion.Update(*p.buf.Document())
+		go p.completion.Update(*p.buf.Document(), complCh)
+		<-complCh
 	}
 
-	p.renderer.Render(p.buf, p.completion, true)
+	p.renderer.Render(p.buf, p.completion)
 
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
@@ -64,13 +65,12 @@ func (p *Prompt) Run() {
 
 	exitCh := make(chan int)
 	winSizeCh := make(chan *WinSize)
-	complMux := new(sync.RWMutex)
-	var globalCompId uuid.UUID
 	stopHandleSignalCh := make(chan struct{})
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 
 	for {
 		select {
+		// User input.
 		case b := <-bufCh:
 			if shouldExit, e := p.feed(b); shouldExit {
 				p.renderer.BreakLine(p.buf)
@@ -87,9 +87,9 @@ func (p *Prompt) Run() {
 				debug.AssertNoError(p.in.TearDown())
 				p.executor(e.input)
 
-				p.completion.Update(*p.buf.Document())
+				go p.completion.Update(*p.buf.Document(), complCh)
 
-				p.renderer.Render(p.buf, p.completion, true)
+				p.renderer.Render(p.buf, p.completion)
 
 				if p.exitChecker != nil && p.exitChecker(e.input, true) {
 					p.skipTearDown = true
@@ -100,28 +100,23 @@ func (p *Prompt) Run() {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
-				p.renderer.Render(p.buf, p.completion, false)
-				go func() {
-					complMux.Lock()
-					id := uuid.New()
-					globalCompId = id
-					complMux.Unlock()
-					p.completion.Update(*p.buf.Document())
-					complMux.RLock()
-					if globalCompId.ID() == id.ID() {
-						p.renderer.Render(p.buf, p.completion, true)
-					}
-					complMux.RUnlock()
-				}()
+				go p.completion.Update(*p.buf.Document(), complCh)
+				p.renderer.Render(p.buf, p.completion)
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
-			p.renderer.Render(p.buf, p.completion, true)
+			p.renderer.Render(p.buf, p.completion)
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf)
 			p.tearDown()
 			os.Exit(code)
+		case <-complCh:
+			p.renderer.Render(p.buf, p.completion)
 		default:
+			if time.Now().Sub(p.completion.currentComplStart) > p.maxCompletionLatency {
+				// Display spinner
+			}
+			//if isUpdating became false, render
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
@@ -251,11 +246,13 @@ func (p *Prompt) Input() string {
 	p.setUp()
 	defer p.tearDown()
 
+	complCh := make(chan int)
 	if p.completion.showAtStart {
-		p.completion.Update(*p.buf.Document())
+		p.completion.Update(*p.buf.Document(), complCh)
+		<-complCh
 	}
 
-	p.renderer.Render(p.buf, p.completion, true)
+	p.renderer.Render(p.buf, p.completion)
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
@@ -272,9 +269,11 @@ func (p *Prompt) Input() string {
 				stopReadBufCh <- struct{}{}
 				return e.input
 			} else {
-				p.completion.Update(*p.buf.Document())
-				p.renderer.Render(p.buf, p.completion, true)
+				go p.completion.Update(*p.buf.Document(), complCh)
+				p.renderer.Render(p.buf, p.completion)
 			}
+		case <-complCh:
+			p.renderer.Render(p.buf, p.completion)
 		default:
 			time.Sleep(10 * time.Millisecond)
 		}

@@ -2,9 +2,13 @@ package prompt
 
 import (
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/mattn/go-runewidth"
 
 	"github.com/c-bata/go-prompt/internal/debug"
-	runewidth "github.com/mattn/go-runewidth"
 )
 
 const (
@@ -34,9 +38,13 @@ type CompletionManager struct {
 	max       uint16
 	completer Completer
 
-	verticalScroll int
-	wordSeparator  string
-	showAtStart    bool
+	verticalScroll    int
+	wordSeparator     string
+	showAtStart       bool
+	mux               *sync.RWMutex
+	currentComplId    uuid.UUID
+	currentComplStart time.Time
+	isUpdating        bool
 }
 
 // GetSelectedSuggestion returns the selected item.
@@ -60,12 +68,28 @@ func (c *CompletionManager) GetSuggestions() []Suggest {
 func (c *CompletionManager) Reset() {
 	c.selected = -1
 	c.verticalScroll = 0
-	c.Update(*NewDocument())
+	//c.Update(*NewDocument())
 }
 
 // Update to update the suggestions.
-func (c *CompletionManager) Update(in Document) {
-	c.tmp = c.completer(in)
+func (c *CompletionManager) Update(in Document, ch chan int) {
+	c.mux.Lock()
+	id := uuid.New()
+	c.currentComplId = id
+	c.currentComplStart = time.Now()
+	c.isUpdating = true
+	c.mux.Unlock()
+
+	suggestions := c.completer(in)
+
+	c.mux.RLock()
+	if c.currentComplId.ID() == id.ID() {
+		// Completion didn't get interrupted, so notify that it completed.
+		c.tmp = suggestions
+		c.isUpdating = false
+		ch <- 1
+	}
+	c.mux.RUnlock()
 }
 
 // Previous to select the previous suggestion item.
@@ -181,10 +205,10 @@ func formatSuggestions(suggests []Suggest, max int) (new []Suggest, width int) {
 // NewCompletionManager returns initialized CompletionManager object.
 func NewCompletionManager(completer Completer, max uint16) *CompletionManager {
 	return &CompletionManager{
-		selected:  -1,
-		max:       max,
-		completer: completer,
-
+		selected:       -1,
+		max:            max,
+		completer:      completer,
 		verticalScroll: 0,
+		mux:            new(sync.RWMutex),
 	}
 }
