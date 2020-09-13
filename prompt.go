@@ -3,9 +3,11 @@ package prompt
 import (
 	"bytes"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/c-bata/go-prompt/internal/debug"
+	"github.com/google/uuid"
 )
 
 // Executor is called when user input something text.
@@ -54,7 +56,7 @@ func (p *Prompt) Run() {
 		p.completion.Update(*p.buf.Document())
 	}
 
-	p.renderer.Render(p.buf, p.completion)
+	p.renderer.Render(p.buf, p.completion, true)
 
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
@@ -62,6 +64,8 @@ func (p *Prompt) Run() {
 
 	exitCh := make(chan int)
 	winSizeCh := make(chan *WinSize)
+	complMux := new(sync.RWMutex)
+	var globalCompId uuid.UUID
 	stopHandleSignalCh := make(chan struct{})
 	go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 
@@ -85,7 +89,7 @@ func (p *Prompt) Run() {
 
 				p.completion.Update(*p.buf.Document())
 
-				p.renderer.Render(p.buf, p.completion)
+				p.renderer.Render(p.buf, p.completion, true)
 
 				if p.exitChecker != nil && p.exitChecker(e.input, true) {
 					p.skipTearDown = true
@@ -96,12 +100,23 @@ func (p *Prompt) Run() {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
-				p.completion.Update(*p.buf.Document())
-				p.renderer.Render(p.buf, p.completion)
+				p.renderer.Render(p.buf, p.completion, false)
+				go func() {
+					complMux.Lock()
+					id := uuid.New()
+					globalCompId = id
+					complMux.Unlock()
+					p.completion.Update(*p.buf.Document())
+					complMux.RLock()
+					if globalCompId.ID() == id.ID() {
+						p.renderer.Render(p.buf, p.completion, true)
+					}
+					complMux.RUnlock()
+				}()
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
-			p.renderer.Render(p.buf, p.completion)
+			p.renderer.Render(p.buf, p.completion, true)
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf)
 			p.tearDown()
@@ -240,7 +255,7 @@ func (p *Prompt) Input() string {
 		p.completion.Update(*p.buf.Document())
 	}
 
-	p.renderer.Render(p.buf, p.completion)
+	p.renderer.Render(p.buf, p.completion, true)
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
@@ -258,7 +273,7 @@ func (p *Prompt) Input() string {
 				return e.input
 			} else {
 				p.completion.Update(*p.buf.Document())
-				p.renderer.Render(p.buf, p.completion)
+				p.renderer.Render(p.buf, p.completion, true)
 			}
 		default:
 			time.Sleep(10 * time.Millisecond)

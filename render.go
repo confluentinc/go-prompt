@@ -167,7 +167,7 @@ func (r *Render) renderCompletion(buf *Buffer, completions *CompletionManager) {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
+func (r *Render) Render(buffer *Buffer, completion *CompletionManager, renderCompletion bool) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -203,7 +203,9 @@ func (r *Render) Render(buffer *Buffer, completion *CompletionManager) {
 
 	cursor = r.backward(cursor, runewidth.StringWidth(line)-buffer.DisplayCursorPosition())
 
-	r.renderCompletion(buffer, completion)
+	if renderCompletion {
+		r.renderCompletion(buffer, completion)
+	}
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursor = r.backward(cursor, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
