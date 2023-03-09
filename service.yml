@@ -1,0 +1,9 @@
+name: confluentinc/go-prompt
+lang: go
+lang_version: 1.19.2
+git:
+  enable: true
+github:
+  enable: false
+semaphore:
+  enable: true
