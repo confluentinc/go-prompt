@@ -175,7 +175,8 @@ func (r *Render) ClearScreen() {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, previousText string, completion *CompletionManager, lexer *Lexer) {
+func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) {
+
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -184,9 +185,12 @@ func (r *Render) Render(buffer *Buffer, previousText string, completion *Complet
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
 
 	line := buffer.Text()
+
+	// Down, ControlN
 	traceBackLines := strings.Count(previousText, "\n")
-	if len(line) == 0 {
-		// if the new buffer is empty, then we shouldn't traceback any
+	// if the new buffer is empty and we are not browsing the history using the Down/controlDown keys
+	// then we reset the traceBackLines to 0 since there's nothing to trace back/erase.
+	if len(line) == 0 && lastKeyStroke != ControlDown && lastKeyStroke != Down {
 		traceBackLines = 0
 	}
 	debug.Log(fmt.Sprintln(line))
