@@ -175,12 +175,12 @@ func (r *Render) ClearScreen() {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) {
+func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
 
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
-		return
+		return 0
 	}
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
 
@@ -207,7 +207,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	h := y + 1 + int(completion.max)
 	if h > int(r.row) || completionMargin > int(r.col) {
 		r.renderWindowTooSmall()
-		return
+		return traceBackLines
 	}
 
 	// Rendering
@@ -268,6 +268,8 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 		cursor = r.backward(cursor, runewidth.StringWidth(rest))
 	}
 	r.previousCursor = cursor
+
+	return traceBackLines
 }
 
 func (r *Render) renderLine(line string, lexer *Lexer) {
