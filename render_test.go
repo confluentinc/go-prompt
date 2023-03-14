@@ -5,7 +5,6 @@ package prompt
 
 import (
 	"reflect"
-	"syscall"
 	"testing"
 )
 
@@ -77,10 +76,8 @@ func TestFormatCompletion(t *testing.T) {
 func TestBreakLineCallback(t *testing.T) {
 	var i int
 	r := &Render{
-		prefix: "> ",
-		out: &PosixWriter{
-			fd: syscall.Stdin, // "write" to stdin just so we don't mess with the output of the tests
-		},
+		prefix:                       "> ",
+		out:                          &PosixWriter{},
 		livePrefixCallback:           func() (string, bool) { return "", false },
 		prefixTextColor:              Blue,
 		prefixBGColor:                DefaultColor,
@@ -140,10 +137,8 @@ func TestLinesToTracebackRender(t *testing.T) {
 	}
 
 	r := &Render{
-		prefix: "> ",
-		out: &PosixWriter{
-			fd: syscall.Stdin, // "write" to stdin just so we don't mess with the output of the tests
-		},
+		prefix:                       "> ",
+		out:                          &PosixWriter{},
 		livePrefixCallback:           func() (string, bool) { return "", false },
 		prefixTextColor:              Blue,
 		prefixBGColor:                DefaultColor,
