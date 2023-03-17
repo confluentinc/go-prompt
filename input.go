@@ -3,7 +3,10 @@ package prompt
 import (
 	"bytes"
 	"sort"
+	"sync"
 )
+
+var once sync.Once
 
 // WinSize represents the width and height of terminal.
 type WinSize struct {
@@ -35,9 +38,11 @@ func GetKey(b []byte) Key {
 
 // RemoveASCIISequences sanitizes the input bytes of ascii sequences that mess with the rendering
 func RemoveASCIISequences(input []byte) []byte {
-	//go from longest to shortest sequence to avoid having subsequence issues
-	sort.Slice(ASCIISequences, func(i, j int) bool {
-		return len(ASCIISequences[i].ASCIICode) > len(ASCIISequences[j].ASCIICode)
+	once.Do(func() {
+		//go from longest to shortest sequence to avoid having subsequence issues
+		sort.Slice(ASCIISequences, func(i, j int) bool {
+			return len(ASCIISequences[i].ASCIICode) > len(ASCIISequences[j].ASCIICode)
+		})
 	})
 	for _, specialSequence := range ASCIISequences {
 		input = bytes.ReplaceAll(input, specialSequence.ASCIICode, []byte{})
