@@ -173,3 +173,54 @@ func TestLinesToTracebackRender(t *testing.T) {
 		require.Equal(t, s.linesToTraceBack, tracedBackLines)
 	}
 }
+
+func TestGetCursorEndPosition(t *testing.T) {
+	r := &Render{
+		prefix:                       "> ",
+		out:                          &PosixWriter{},
+		livePrefixCallback:           func() (string, bool) { return "", false },
+		prefixTextColor:              Blue,
+		prefixBGColor:                DefaultColor,
+		inputTextColor:               DefaultColor,
+		inputBGColor:                 DefaultColor,
+		previewSuggestionTextColor:   Green,
+		previewSuggestionBGColor:     DefaultColor,
+		suggestionTextColor:          White,
+		suggestionBGColor:            Cyan,
+		selectedSuggestionTextColor:  Black,
+		selectedSuggestionBGColor:    Turquoise,
+		descriptionTextColor:         Black,
+		descriptionBGColor:           Turquoise,
+		selectedDescriptionTextColor: White,
+		selectedDescriptionBGColor:   Cyan,
+		scrollbarThumbColor:          DarkGray,
+		scrollbarBGColor:             Cyan,
+		col:                          5,
+		row:                          10,
+	}
+
+	scenarios := []struct {
+		text                 string
+		startPos             int
+		expectedCursorEndPos int
+	}{
+		{text: "abc", startPos: 0, expectedCursorEndPos: 3},
+		{text: "abcd", startPos: 0, expectedCursorEndPos: 4},
+		{text: "abcde", startPos: 0, expectedCursorEndPos: 5},
+		{text: "abc\n", startPos: 0, expectedCursorEndPos: 5},
+		{text: "abc\n\n", startPos: 0, expectedCursorEndPos: 10},
+		{text: "abc\nd", startPos: 0, expectedCursorEndPos: 6},
+		{text: "ab\nc", startPos: 0, expectedCursorEndPos: 6},
+		{text: "ab\n\nc", startPos: 0, expectedCursorEndPos: 11},
+		{text: "ab\n\nc", startPos: 2, expectedCursorEndPos: 11},
+		{text: "ab\n\nc", startPos: 3, expectedCursorEndPos: 16},
+		{text: "ab\n\ncdefghijk", startPos: 3, expectedCursorEndPos: 24},
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		actualEndPos := r.getCursorEndPos(s.text, s.startPos)
+		require.Equal(t, s.expectedCursorEndPos, actualEndPos)
+	}
+
+}
