@@ -4,6 +4,8 @@
 package prompt
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 )
@@ -156,18 +158,18 @@ func TestLinesToTracebackRender(t *testing.T) {
 		selectedDescriptionBGColor:   Cyan,
 		scrollbarThumbColor:          DarkGray,
 		scrollbarBGColor:             Cyan,
-		col:                          1,
+		col:                          100,
+		row:                          100,
 	}
 
-	for _, s := range scenarios {
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
 		b := NewBuffer()
 		b.InsertText(s.nextText, false, true)
 		l := NewLexer()
 
+		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
 		tracedBackLines := r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), l)
-
-		if tracedBackLines != s.linesToTraceBack {
-			t.Errorf("Should've traced back %d lines before rendering, but got %d", s.linesToTraceBack, tracedBackLines)
-		}
+		require.Equal(t, s.linesToTraceBack, tracedBackLines)
 	}
 }
