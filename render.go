@@ -57,11 +57,10 @@ func (r *Render) getCurrentPrefix() string {
 	return r.prefix
 }
 
-func (r *Render) renderPrefix() int {
+func (r *Render) renderPrefix() {
 	r.out.SetColor(r.prefixTextColor, r.prefixBGColor, false)
 	r.out.WriteStr(r.getCurrentPrefix())
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	return r.getCursorEndPos(r.getCurrentPrefix(), 0)
 }
 
 // TearDown to clear title and erasing.
@@ -185,13 +184,11 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	}
 	defer func() { debug.AssertNoError(r.out.Flush()) }()
 
-	cursorPos := r.previousCursor
-
 	prefix := r.getCurrentPrefix()
 	line := buffer.Text()
 
 	// Down, ControlN
-	traceBackLines := cursorPos / int(r.col) // calculate number of lines we had before
+	traceBackLines := r.previousCursor / int(r.col) // calculate number of lines we had before
 	// if the new buffer is empty and we are not browsing the history using the Down/controlDown keys
 	// then we reset the traceBackLines to 0 since there's nothing to trace back/erase.
 	if len(line) == 0 && lastKeyStroke != ControlDown && lastKeyStroke != Down {
@@ -210,25 +207,24 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	}
 
 	// Clear screen
-	cursorPos = r.clear(cursorPos)
+	r.clear(r.previousCursor)
 
 	// Render new text
-	cursorPos += r.renderPrefix()
+	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	cursorPos += r.renderLine(line, lexer, cursorPos)
+	r.renderLine(line, lexer)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
-	// Translate buffer cursor position into console cursor position
-	cursorPosInBuffer := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
-	cursorPos = r.move(cursorPos, cursorPosInBuffer)
+	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
+	// We now need to find out where the console cursor would be if it had the same position as the buffer cursor.
+	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
+	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
 		r.out.SetColor(r.previewSuggestionTextColor, r.previewSuggestionBGColor, false)
 		r.out.WriteStr(suggest.Text)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
-		cursorPos += runewidth.StringWidth(suggest.Text)
-		cursorPosBehindSuggestion := cursorPos
 
 		rest := buffer.Document().TextAfterCursor()
 
@@ -247,7 +243,8 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 		} else {
 			r.out.WriteStr(rest)
 		}
-		cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(rest, cursorPos)
+		cursorPosBehindSuggestion := cursorPos + runewidth.StringWidth(suggest.Text)
+		cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(suggest.Text+rest, cursorPos)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
@@ -258,7 +255,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	return traceBackLines
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer, cursorPos int) int {
+func (r *Render) renderLine(line string, lexer *Lexer) {
 	if lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
@@ -274,7 +271,6 @@ func (r *Render) renderLine(line string, lexer *Lexer, cursorPos int) int {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
 		r.out.WriteStr(line)
 	}
-	return r.getCursorEndPos(line, cursorPos) - cursorPos
 }
 
 // BreakLine to break line.
@@ -327,10 +323,9 @@ func (r *Render) getCursorEndPos(text string, startPos int) int {
 
 // clear erases the screen from a beginning of input
 // even if there is line break which means input length exceeds a window's width.
-func (r *Render) clear(cursor int) int {
+func (r *Render) clear(cursor int) {
 	r.move(cursor, 0)
 	r.out.EraseDown()
-	return 0
 }
 
 // backward moves cursor to backward from a current cursor position
