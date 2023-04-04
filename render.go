@@ -174,6 +174,20 @@ func (r *Render) ClearScreen() {
 	r.out.CursorGoTo(0, 0)
 }
 
+// checks if the buffer cursor is out of the viewport height after rendering
+func (r *Render) isCursorOutOfViewAfterMoveUp(buffer *Buffer) bool {
+	prefix := r.getCurrentPrefix()
+	line := buffer.Text()
+	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
+	_, lastLineY := r.toPos(cursorEndPos)
+
+	currentLineY := buffer.Document().CursorPositionRow()
+	if currentLineY-1 < 0 || lastLineY-(currentLineY-1) >= int(r.row) {
+		return true
+	}
+	return false
+}
+
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
 
@@ -199,12 +213,6 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
-	_, y := r.toPos(cursorEndPos)
-	h := y + 1 + int(completion.max)
-	if h > int(r.row) || completionMargin > int(r.col) {
-		r.renderWindowTooSmall()
-		return traceBackLines
-	}
 
 	// Clear screen
 	r.clear(r.previousCursor)

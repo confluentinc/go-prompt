@@ -222,5 +222,51 @@ func TestGetCursorEndPosition(t *testing.T) {
 		actualEndPos := r.getCursorEndPos(s.text, s.startPos)
 		require.Equal(t, s.expectedCursorEndPos, actualEndPos)
 	}
+}
 
+func TestIsCursorUpPossible(t *testing.T) {
+	scenarios := []struct {
+		text         string
+		countMovesUp int
+		expected     bool
+	}{
+		{text: "first line\nsecond line", countMovesUp: 0, expected: false},
+		{text: "first line\nsecond line", countMovesUp: 1, expected: true},
+		{text: "first line\nsecond line\nthird line", countMovesUp: 0, expected: false},
+		{text: "first line\nsecond line\nthird line", countMovesUp: 1, expected: true},
+		{text: "first line\nsecond line\nthird line", countMovesUp: 2, expected: true},
+		{text: "first line\nsecond line\nthird line", countMovesUp: 3, expected: true},
+	}
+
+	r := &Render{
+		prefix:                       "> ",
+		out:                          &PosixWriter{},
+		livePrefixCallback:           func() (string, bool) { return "", false },
+		prefixTextColor:              Blue,
+		prefixBGColor:                DefaultColor,
+		inputTextColor:               DefaultColor,
+		inputBGColor:                 DefaultColor,
+		previewSuggestionTextColor:   Green,
+		previewSuggestionBGColor:     DefaultColor,
+		suggestionTextColor:          White,
+		suggestionBGColor:            Cyan,
+		selectedSuggestionTextColor:  Black,
+		selectedSuggestionBGColor:    Turquoise,
+		descriptionTextColor:         Black,
+		descriptionBGColor:           Turquoise,
+		selectedDescriptionTextColor: White,
+		selectedDescriptionBGColor:   Cyan,
+		scrollbarThumbColor:          DarkGray,
+		scrollbarBGColor:             Cyan,
+		col:                          100,
+		row:                          2,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.text, false, true)
+		b.CursorUp(s.countMovesUp)
+		require.Equal(t, s.expected, r.isCursorOutOfViewAfterMoveUp(b))
+	}
 }

@@ -155,15 +155,16 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 	case Up, ControlP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
 
-			// if this is a multiline buffer and the cursor is not at the top line,
-			// then we just move up the cursor
-			if p.buf.NewLineCount() > 0 && p.buf.Document().CursorPositionRow() > 0 {
-				// this is a multiline buffer
-				// move the cursor up by one line
+			// move the cursor up one line if it will still be inside the viewport
+			if !p.renderer.isCursorOutOfViewAfterMoveUp(p.buf) {
 				p.buf.CursorUp(1)
-			} else if newBuf, changed := p.history.Older(p.buf); changed {
-				p.prevText = p.buf.Text()
-				p.buf = newBuf
+			} else if p.buf.Document().CursorPositionRow() == 0 {
+				// if we are on line one check if we have history
+				newBuf, changed := p.history.Older(p.buf)
+				if changed {
+					p.prevText = p.buf.Text()
+					p.buf = newBuf
+				}
 			}
 
 			return
