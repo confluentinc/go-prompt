@@ -4,10 +4,25 @@ agent:
   machine:
     type: e1-standard-2
     os_image: ubuntu2004
+global_job_config:
+  prologue:
+    commands:
+      - sem-version go 1.19
+      - checkout
+      - go install gotest.tools/gotestsum@latest
 blocks:
-  - name: 'Block #1'
+  - name: 'Test'
     task:
       jobs:
-        - name: 'Job #1'
+        - name: 'Test'
           commands:
-            - checkout
+            - go mod download
+            - cache store
+            - gotestsum --junitfile junit.xml ./...
+      prologue:
+        commands:
+          - cache restore
+      epilogue:
+        always:
+          commands:
+            - test-results publish junit.xml
