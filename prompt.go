@@ -152,6 +152,7 @@ func (p *Prompt) Input() string {
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
 
+	completionCh := make(chan bool)
 	exitCh := make(chan int)
 	winSizeCh := make(chan *WinSize)
 	stopHandleSignalCh := make(chan struct{})
@@ -171,7 +172,10 @@ func (p *Prompt) Input() string {
 				stopHandleSignalCh <- struct{}{}
 				return e.input
 			} else {
-				p.completion.Update(*p.buf.Document())
+				go func() {
+					p.completion.Update(*p.buf.Document())
+					completionCh <- true
+				}()
 				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
 			}
 		case w := <-winSizeCh:
@@ -181,6 +185,8 @@ func (p *Prompt) Input() string {
 			p.renderer.BreakLine(p.buf, p.lexer)
 			p.tearDown()
 			os.Exit(code)
+		case <-completionCh:
+			p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
 		default:
 			time.Sleep(10 * time.Millisecond)
 		}
