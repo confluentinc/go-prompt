@@ -172,8 +172,9 @@ func (p *Prompt) Input() string {
 				stopHandleSignalCh <- struct{}{}
 				return e.input
 			} else {
+				document := *p.buf.Document()
 				go func() {
-					p.completion.Update(*p.buf.Document())
+					p.completion.Update(document)
 					completionCh <- true
 				}()
 				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
@@ -187,8 +188,6 @@ func (p *Prompt) Input() string {
 			os.Exit(code)
 		case <-completionCh:
 			p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
-		default:
-			time.Sleep(10 * time.Millisecond)
 		}
 	}
 }
