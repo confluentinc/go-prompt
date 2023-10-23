@@ -93,7 +93,7 @@ func (r *Render) renderWindowTooSmall(msg string) {
 
 func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
 	suggestions := completions.GetSuggestions()
-	if len(completions.GetSuggestions()) == 0 {
+	if len(suggestions) == 0 {
 		return
 	}
 	prefix := r.getCurrentPrefix()
@@ -117,7 +117,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		cursor = r.backward(cursor, x+width-int(r.col))
 	}
 
-	contentHeight := len(completions.tmp)
+	contentHeight := len(suggestions)
 
 	fractionVisible := float64(windowHeight) / float64(contentHeight)
 	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)

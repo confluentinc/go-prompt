@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/confluentinc/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
@@ -37,6 +38,8 @@ type CompletionManager struct {
 	verticalScroll int
 	wordSeparator  string
 	showAtStart    bool
+
+	mu sync.RWMutex
 }
 
 // GetSelectedSuggestion returns the selected item.
@@ -48,11 +51,17 @@ func (c *CompletionManager) GetSelectedSuggestion() (s Suggest, ok bool) {
 		c.selected = -1
 		return Suggest{}, false
 	}
+
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	return c.tmp[c.selected], true
 }
 
 // GetSuggestions returns the list of suggestion.
 func (c *CompletionManager) GetSuggestions() []Suggest {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	return c.tmp
 }
 
@@ -65,7 +74,12 @@ func (c *CompletionManager) Reset() {
 
 // Update to update the suggestions.
 func (c *CompletionManager) Update(in Document) {
-	c.tmp = c.completer(in)
+	updatedSuggestions := c.completer(in)
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.tmp = updatedSuggestions
 }
 
 // Previous to select the previous suggestion item.
@@ -93,15 +107,16 @@ func (c *CompletionManager) Completing() bool {
 
 func (c *CompletionManager) update() {
 	max := int(c.max)
-	if len(c.tmp) < max {
-		max = len(c.tmp)
+	lenSuggestions := len(c.GetSuggestions())
+	if lenSuggestions < max {
+		max = lenSuggestions
 	}
 
-	if c.selected >= len(c.tmp) {
+	if c.selected >= lenSuggestions {
 		c.Reset()
 	} else if c.selected < -1 {
-		c.selected = len(c.tmp) - 1
-		c.verticalScroll = len(c.tmp) - max
+		c.selected = lenSuggestions - 1
+		c.verticalScroll = lenSuggestions - max
 	}
 }
 
