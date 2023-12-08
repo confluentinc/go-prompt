@@ -32,6 +32,13 @@ func main() {
 }
 ```
 
+#### Debugging
+You can export the follow envrioment variable in your terminal to enable debugging logs in go-prompt.
+
+```
+export GO_PROMPT_ENABLE_LOG="true"
+```
+
 #### Projects using go-prompt
 
 * [c-bata/kube-prompt : An interactive kubernetes client featuring auto-complete written in Go.](https://github.com/c-bata/kube-prompt)
