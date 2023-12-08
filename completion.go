@@ -52,6 +52,7 @@ func (c *CompletionManager) GetSelectedSuggestion() (s Suggest, ok bool) {
 	} else if c.selected < -1 || c.selected >= len(c.tmp) {
 		debug.Assert(false, "must not reach here")
 		c.selected = -1
+		c.verticalScroll = 0
 		return Suggest{}, false
 	}
 
@@ -76,11 +77,13 @@ func (c *CompletionManager) GetSelectedIdx() int {
 func (c *CompletionManager) Reset() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	c.reset()
+}
 
+func (c *CompletionManager) reset() {
 	c.selected = -1
 	c.verticalScroll = 0
-	updatedSuggestions := c.completer(*NewDocument())
-	c.tmp = updatedSuggestions
+	c.tmp = []Suggest{}
 }
 
 // Update to update the suggestions.
@@ -90,7 +93,7 @@ func (c *CompletionManager) Update(in Document) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.selected = -1
+	c.reset()
 	c.tmp = updatedSuggestions
 }
 
@@ -134,10 +137,7 @@ func (c *CompletionManager) update() {
 	}
 
 	if c.selected >= lenSuggestions {
-		c.selected = -1
-		c.verticalScroll = 0
-		updatedSuggestions := c.completer(*NewDocument())
-		c.tmp = updatedSuggestions
+		c.reset()
 	} else if c.selected < -1 {
 		c.selected = lenSuggestions - 1
 		c.verticalScroll = lenSuggestions - max
