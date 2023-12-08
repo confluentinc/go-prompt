@@ -173,10 +173,13 @@ func (p *Prompt) Input() string {
 				return e.input
 			} else {
 				document := *p.buf.Document()
-				go func() {
-					p.completion.Update(document)
-					completionCh <- true
-				}()
+				// we don't want to trigger completions again while navigating existing completions
+				if !p.completion.Completing() {
+					go func() {
+						p.completion.Update(document)
+						completionCh <- true
+					}()
+				}
 				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
 			}
 		case w := <-winSizeCh:

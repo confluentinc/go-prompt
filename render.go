@@ -129,7 +129,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		return scrollbarTop <= row && row <= scrollbarTop+scrollbarHeight
 	}
 
-	selected := completions.selected - completions.verticalScroll
+	selected := completions.GetSelectedIdx() - completions.verticalScroll
 	r.out.SetColor(White, Cyan, false)
 	for i := 0; i < windowHeight; i++ {
 		r.out.CursorDown(1)
