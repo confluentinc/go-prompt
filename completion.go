@@ -44,16 +44,17 @@ type CompletionManager struct {
 
 // GetSelectedSuggestion returns the selected item.
 func (c *CompletionManager) GetSelectedSuggestion() (s Suggest, ok bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.selected == -1 {
 		return Suggest{}, false
-	} else if c.selected < -1 {
+	} else if c.selected < -1 || c.selected >= len(c.tmp) {
 		debug.Assert(false, "must not reach here")
 		c.selected = -1
+		c.verticalScroll = 0
 		return Suggest{}, false
 	}
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 
 	return c.tmp[c.selected], true
 }
@@ -65,11 +66,24 @@ func (c *CompletionManager) GetSuggestions() []Suggest {
 	return c.tmp
 }
 
+// GetSuggestions returns the list of suggestion.
+func (c *CompletionManager) GetSelectedIdx() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.selected
+}
+
 // Reset to select nothing.
 func (c *CompletionManager) Reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.reset()
+}
+
+func (c *CompletionManager) reset() {
 	c.selected = -1
 	c.verticalScroll = 0
-	c.Update(*NewDocument())
+	c.tmp = []Suggest{}
 }
 
 // Update to update the suggestions.
@@ -79,11 +93,15 @@ func (c *CompletionManager) Update(in Document) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	c.reset()
 	c.tmp = updatedSuggestions
 }
 
 // Previous to select the previous suggestion item.
 func (c *CompletionManager) Previous() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.verticalScroll == c.selected && c.selected > 0 {
 		c.verticalScroll--
 	}
@@ -93,6 +111,9 @@ func (c *CompletionManager) Previous() {
 
 // Next to select the next suggestion item.
 func (c *CompletionManager) Next() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.verticalScroll+int(c.max)-1 == c.selected {
 		c.verticalScroll++
 	}
@@ -102,18 +123,21 @@ func (c *CompletionManager) Next() {
 
 // Completing returns whether the CompletionManager selects something one.
 func (c *CompletionManager) Completing() bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	return c.selected != -1
 }
 
 func (c *CompletionManager) update() {
 	max := int(c.max)
-	lenSuggestions := len(c.GetSuggestions())
+	lenSuggestions := len(c.tmp)
 	if lenSuggestions < max {
 		max = lenSuggestions
 	}
 
 	if c.selected >= lenSuggestions {
-		c.Reset()
+		c.reset()
 	} else if c.selected < -1 {
 		c.selected = lenSuggestions - 1
 		c.verticalScroll = lenSuggestions - max
