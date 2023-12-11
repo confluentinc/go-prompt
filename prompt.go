@@ -262,7 +262,7 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 	p.handleCompletionKeyBinding(key, completing)
 
 	switch key {
-	case Enter, ControlJ, ControlM:
+	case Enter, ControlJ, ControlM, AltEnter:
 		if p.statementTerminatorCb == nil || !p.statementTerminatorCb(p.buf.lastKeyStroke, p.buf) {
 			p.buf.NewLine(false)
 		} else {

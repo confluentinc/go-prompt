@@ -54,6 +54,8 @@ const (
 	ControlUp
 	ControlDown
 
+	AltEnter
+
 	Up
 	Down
 	Right
