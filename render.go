@@ -92,6 +92,8 @@ func (r *Render) renderWindowTooSmall(msg string) {
 }
 
 func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
+	completionsSelectedIdx := completions.GetSelectedIdx()
+	completionsVerticalScroll := completions.GetVerticalScroll()
 	suggestions := completions.GetSuggestions()
 	if len(suggestions) == 0 {
 		return
@@ -108,7 +110,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 	if windowHeight > int(completions.max) {
 		windowHeight = int(completions.max)
 	}
-	formatted = formatted[completions.verticalScroll : completions.verticalScroll+windowHeight]
+	formatted = formatted[completionsVerticalScroll : completionsVerticalScroll+windowHeight]
 	r.prepareArea(windowHeight)
 
 	cursor := cursorPos
@@ -120,7 +122,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 	contentHeight := len(suggestions)
 
 	fractionVisible := float64(windowHeight) / float64(contentHeight)
-	fractionAbove := float64(completions.verticalScroll) / float64(contentHeight)
+	fractionAbove := float64(completionsVerticalScroll) / float64(contentHeight)
 
 	scrollbarHeight := int(clamp(float64(windowHeight), 1, float64(windowHeight)*fractionVisible))
 	scrollbarTop := int(float64(windowHeight) * fractionAbove)
@@ -129,7 +131,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		return scrollbarTop <= row && row <= scrollbarTop+scrollbarHeight
 	}
 
-	selected := completions.GetSelectedIdx() - completions.verticalScroll
+	selected := completionsSelectedIdx - completionsVerticalScroll
 	r.out.SetColor(White, Cyan, false)
 	for i := 0; i < windowHeight; i++ {
 		r.out.CursorDown(1)

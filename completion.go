@@ -66,11 +66,18 @@ func (c *CompletionManager) GetSuggestions() []Suggest {
 	return c.tmp
 }
 
-// GetSuggestions returns the list of suggestion.
+// GetSelectedIdx returns the idx of the current selection
 func (c *CompletionManager) GetSelectedIdx() int {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.selected
+}
+
+// GetVerticalScroll returns the current value of verticalScroll.
+func (c *CompletionManager) GetVerticalScroll() int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.verticalScroll
 }
 
 // Reset to select nothing.
