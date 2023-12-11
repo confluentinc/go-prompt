@@ -92,6 +92,8 @@ var ASCIISequences = []*ASCIICode{
 	{Key: ControlUnderscore, ASCIICode: []byte{0x1f}},
 	{Key: Backspace, ASCIICode: []byte{0x7f}},
 
+	{Key: AltEnter, ASCIICode: []byte{0x1b, 0xd}},
+
 	{Key: Up, ASCIICode: []byte{0x1b, 0x5b, 0x41}},
 	{Key: Down, ASCIICode: []byte{0x1b, 0x5b, 0x42}},
 	{Key: Right, ASCIICode: []byte{0x1b, 0x5b, 0x43}},
