@@ -50,14 +50,20 @@ func TestSanitizeInputWithASCIISequences(t *testing.T) {
 			//append 1-5 ascii control sequences
 			sequences := rapid.SliceOfN(RandomASCIIByteSequence(), 1, 5).Draw(t, "random number of ascii control sequences")
 			for _, sequence := range sequences {
-				// allow \n and \r to be inserted
+				// skip those because having them can lead to weird test interactions, e.g. when we generated an Escape
+				// in front of a ControlM, which is the same sequence as AltEnter and will get filtered out
 				if sequence.Key == Enter || sequence.Key == ControlM {
-					expectedString = append(expectedString, sequence.ASCIICode...)
+					continue
 				}
-
 				inputString = append(inputString, sequence.ASCIICode...)
 			}
 		}
 		assert.Equal(t, string(expectedString), string(RemoveASCIISequences(inputString)))
 	})
+}
+
+func TestSanitizeInputWithASCIISequencesDoesNotRemoveControlMAndEnter(t *testing.T) {
+	// shouldn't remove all the line breaks
+	expectedString := "this_is\n\r_a_lon\r\nger_size\r\rd_text_inp\n\nu_f\nor_testi\rg_purposes"
+	assert.Equal(t, expectedString, string(RemoveASCIISequences([]byte(expectedString))))
 }
