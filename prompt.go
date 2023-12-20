@@ -2,9 +2,10 @@ package prompt
 
 import (
 	"bytes"
-	"github.com/confluentinc/go-prompt/internal/debug"
 	"os"
 	"time"
+
+	"github.com/confluentinc/go-prompt/internal/debug"
 )
 
 // Executor is called when user input something text.

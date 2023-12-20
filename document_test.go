@@ -2,10 +2,11 @@ package prompt
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/stretchr/testify/require"
 )
 
 func ExampleDocument_CurrentLine() {
@@ -633,7 +634,7 @@ func TestDocument_FindStartOfPreviousWord(t *testing.T) {
 	}
 
 	for idx, p := range pattern {
-		fmt.Println(fmt.Sprintf("Evaluating test case #%v", idx))
+		fmt.Printf("Evaluating test case #%v\n", idx)
 		if p.sep == "" {
 			require.Equal(t, p.expected, p.document.FindStartOfPreviousWord())
 			require.Equal(t, p.expected, p.document.FindStartOfPreviousWordUntilSeparator(""))
@@ -745,7 +746,7 @@ func TestDocument_FindStartOfPreviousWordWithSpace(t *testing.T) {
 	}
 
 	for idx, p := range pattern {
-		fmt.Println(fmt.Sprintf("Evaluating test case #%v", idx))
+		fmt.Printf("Evaluating test case #%v\n", idx)
 		if p.sep == "" {
 			require.Equal(t, p.expected, p.document.FindStartOfPreviousWordWithSpace())
 			require.Equal(t, p.expected, p.document.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(""))
