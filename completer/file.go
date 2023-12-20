@@ -1,13 +1,12 @@
 package completer
 
 import (
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
 	"runtime"
 
-	prompt "github.com/confluentinc/go-prompt"
+	"github.com/confluentinc/go-prompt"
 	"github.com/confluentinc/go-prompt/internal/debug"
 )
 
@@ -20,7 +19,7 @@ var (
 // Please caution that you need to set OptionCompletionWordSeparator(completer.FilePathCompletionSeparator)
 // when you use this completer.
 type FilePathCompleter struct {
-	Filter        func(fi os.FileInfo) bool
+	Filter        func(os.DirEntry) bool
 	IgnoreCase    bool
 	fileListCache map[string][]prompt.Suggest
 }
@@ -70,7 +69,7 @@ func (c *FilePathCompleter) Complete(d prompt.Document) []prompt.Suggest {
 		return prompt.FilterHasPrefix(cached, base, c.IgnoreCase)
 	}
 
-	files, err := ioutil.ReadDir(dir)
+	entries, err := os.ReadDir(dir)
 	if err != nil && os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -78,12 +77,12 @@ func (c *FilePathCompleter) Complete(d prompt.Document) []prompt.Suggest {
 		return nil
 	}
 
-	suggests := make([]prompt.Suggest, 0, len(files))
-	for _, f := range files {
-		if c.Filter != nil && !c.Filter(f) {
+	suggests := make([]prompt.Suggest, 0, len(entries))
+	for _, entry := range entries {
+		if c.Filter != nil && !c.Filter(entry) {
 			continue
 		}
-		suggests = append(suggests, prompt.Suggest{Text: f.Name()})
+		suggests = append(suggests, prompt.Suggest{Text: entry.Name()})
 	}
 	c.fileListCache[dir] = suggests
 	return prompt.FilterHasPrefix(suggests, base, c.IgnoreCase)

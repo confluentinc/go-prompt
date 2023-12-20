@@ -1,5 +1,4 @@
 //go:build !windows
-// +build !windows
 
 package main
 
@@ -7,7 +6,7 @@ import (
 	"fmt"
 	"syscall"
 
-	prompt "github.com/confluentinc/go-prompt"
+	"github.com/confluentinc/go-prompt"
 	"github.com/confluentinc/go-prompt/internal/term"
 )
 

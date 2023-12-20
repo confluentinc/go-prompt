@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	prompt "github.com/confluentinc/go-prompt"
+	"github.com/confluentinc/go-prompt"
 )
 
 var LivePrefixState struct {
