@@ -194,14 +194,6 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
-	_, y := r.toPos(cursorEndPos)
-	h := y + 1 + int(completion.max)
-	if h > int(r.row) || completionMargin > int(r.col) {
-		//windowTooSmallMsg := "Your console window is too small, please delete some lines..."
-		//r.renderWindowTooSmall(windowTooSmallMsg)
-		//r.previousCursor = r.getCursorEndPos(windowTooSmallMsg, 0)
-		//return traceBackLines
-	}
 
 	// Clear screen
 	r.clear(r.previousCursor)

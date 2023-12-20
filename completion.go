@@ -16,12 +16,6 @@ const (
 	rightSuffix   = " "
 )
 
-var (
-	leftMargin       = runewidth.StringWidth(leftPrefix + leftSuffix)
-	rightMargin      = runewidth.StringWidth(rightPrefix + rightSuffix)
-	completionMargin = leftMargin + rightMargin
-)
-
 // Suggest is printed when completing.
 type Suggest struct {
 	Text        string
