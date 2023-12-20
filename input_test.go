@@ -1,9 +1,10 @@
 package prompt
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"pgregory.net/rapid"
-	"testing"
 )
 
 func TestPosixParserGetKey(t *testing.T) {

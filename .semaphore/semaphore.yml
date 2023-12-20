@@ -1,33 +1,80 @@
 version: v1.0
-name: Initial Pipeline
+name: go-prompt
+
 agent:
   machine:
-    type: e1-standard-2
-    os_image: ubuntu2004
-global_job_config:
-  prologue:
-    commands:
-      - sem-version go 1.19
-      - checkout
-      - go install gotest.tools/gotestsum@latest
-blocks:
-  - name: Test
+    type: s1-prod-ubuntu20-04-amd64-1
+
+auto_cancel:
+  running:
+    when: "branch != 'master'"
+
+execution_time_limit:
+  hours: 1
+
+  blocks:
+    - name: linux/amd64
+      dependencies: []
+      task:
+        jobs:
+          - name: linux/amd64
+            commands:
+              - checkout
+              - sem-version go $(cat .go-version)
+              - export PATH=$(go env GOPATH)/bin:$PATH
+              - make lint
+              - make test
+        epilogue:
+          always:
+            commands:
+              - test-results publish . -N "linux/amd64"
+
+    - name: darwin/arm64
+      dependencies: []
+      task:
+        agent:
+          machine:
+            type: s1-prod-macos-13-5-arm64
+        jobs:
+          - name: darwin/arm64
+            commands:
+              - checkout
+              - sem-version go $(cat .go-version)
+              - export PATH=$(go env GOPATH)/bin:$PATH
+              - make test
+        epilogue:
+          always:
+            commands:
+              - test-results publish . -N "darwin/arm64"
+
+    - name: windows/amd64
+      dependencies: []
+      task:
+        agent:
+          machine:
+            type: s1-prod-windows
+        jobs:
+          - name: windows/amd64
+            commands:
+              - checkout
+              # https://confluentinc.atlassian.net/browse/DP-9532
+              - choco install -y golang --version $(Get-Content .go-version)
+              - go install gotest.tools/gotestsum@v1.8.2
+              - gotestsum --junitfile test-report.xml -- -v ./...
+        epilogue:
+          always:
+            commands:
+              - test-results publish . -N "windows/amd64"
+
+  after_pipeline:
     task:
       jobs:
-        - name: Test
+        - name: Publish Results
           commands:
-            - go mod download
-            - cache store
-            - gotestsum --junitfile junit.xml ./...
-      prologue:
-        commands:
-          - cache restore
-      epilogue:
-        always:
-          commands:
-            - test-results publish junit.xml
+            - test-results gen-pipeline-report
+
 promotions:
   - name: Release
-    pipeline_file: pipeline_2.yml
+    pipeline_file: release.yml
     auto_promote:
       when: branch = 'master' AND result = 'passed'

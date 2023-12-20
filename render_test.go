@@ -1,13 +1,13 @@
 //go:build !windows
-// +build !windows
 
 package prompt
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func emptyCompleter(in Document) []Suggest {
