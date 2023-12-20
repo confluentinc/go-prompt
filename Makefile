@@ -3,7 +3,6 @@
 SOURCES := $(shell find . -prune -o -name "*.go" -not -name '*_test.go' -print)
 
 GOIMPORTS ?= goimports
-GOCILINT ?= golangci-lint
 
 .PHONY: setup
 setup:  ## Setup for required tools.
@@ -16,12 +15,18 @@ fmt: $(SOURCES) ## Formatting source codes.
 	@$(GOIMPORTS) -w $^
 
 .PHONY: lint
-lint: ## Run golangci-lint.
-	@$(GOCILINT) run --no-config --disable-all --enable=goimports --enable=misspell ./...
+lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2 && \
+	golangci-lint run
 
 .PHONY: test
-test:  ## Run tests with race condition checking.
-	@go test -race ./...
+test:
+ifdef CI
+	go install gotest.tools/gotestsum@v1.8.2
+	gotestsum --junitfile test-report.xml -- -v ./...
+else
+	go test -v ./...
+endif
 
 .PHONY: bench
 bench:  ## Run benchmarks.

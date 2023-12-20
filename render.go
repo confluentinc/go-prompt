@@ -85,12 +85,6 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 	r.col = ws.Col
 }
 
-func (r *Render) renderWindowTooSmall(msg string) {
-	r.out.CursorGoTo(0, 0)
-	r.out.EraseScreen()
-	r.out.WriteStr(msg)
-}
-
 func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
 	completionsSelectedIdx := completions.GetSelectedIdx()
 	completionsVerticalScroll := completions.GetVerticalScroll()
@@ -200,15 +194,6 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
-	_, y := r.toPos(cursorEndPos)
-	h := y + 1 + int(completion.max)
-	if h > int(r.row) || completionMargin > int(r.col) {
-		//TODO: comment back in after demo
-		//windowTooSmallMsg := "Your console window is too small, please delete some lines..."
-		//r.renderWindowTooSmall(windowTooSmallMsg)
-		//r.previousCursor = r.getCursorEndPos(windowTooSmallMsg, 0)
-		//return traceBackLines
-	}
 
 	// Clear screen
 	r.clear(r.previousCursor)
