@@ -12,66 +12,66 @@ auto_cancel:
 execution_time_limit:
   hours: 1
 
-  blocks:
-    - name: linux/amd64
-      dependencies: []
-      task:
-        jobs:
-          - name: linux/amd64
-            commands:
-              - checkout
-              - sem-version go $(cat .go-version)
-              - export PATH=$(go env GOPATH)/bin:$PATH
-              - make lint
-              - make test
-        epilogue:
-          always:
-            commands:
-              - test-results publish . -N "linux/amd64"
-
-    - name: darwin/arm64
-      dependencies: []
-      task:
-        agent:
-          machine:
-            type: s1-prod-macos-13-5-arm64
-        jobs:
-          - name: darwin/arm64
-            commands:
-              - checkout
-              - sem-version go $(cat .go-version)
-              - export PATH=$(go env GOPATH)/bin:$PATH
-              - make test
-        epilogue:
-          always:
-            commands:
-              - test-results publish . -N "darwin/arm64"
-
-    - name: windows/amd64
-      dependencies: []
-      task:
-        agent:
-          machine:
-            type: s1-prod-windows
-        jobs:
-          - name: windows/amd64
-            commands:
-              - checkout
-              # https://confluentinc.atlassian.net/browse/DP-9532
-              - choco install -y golang --version $(Get-Content .go-version)
-              - go install gotest.tools/gotestsum@v1.8.2
-              - gotestsum --junitfile test-report.xml -- -v ./...
-        epilogue:
-          always:
-            commands:
-              - test-results publish . -N "windows/amd64"
-
-  after_pipeline:
+blocks:
+  - name: linux/amd64
+    dependencies: []
     task:
       jobs:
-        - name: Publish Results
+        - name: linux/amd64
           commands:
-            - test-results gen-pipeline-report
+            - checkout
+            - sem-version go $(cat .go-version)
+            - export PATH=$(go env GOPATH)/bin:$PATH
+            - make lint
+            - make test
+      epilogue:
+        always:
+          commands:
+            - test-results publish . -N "linux/amd64"
+
+  - name: darwin/arm64
+    dependencies: []
+    task:
+      agent:
+        machine:
+          type: s1-prod-macos-13-5-arm64
+      jobs:
+        - name: darwin/arm64
+          commands:
+            - checkout
+            - sem-version go $(cat .go-version)
+            - export PATH=$(go env GOPATH)/bin:$PATH
+            - make test
+      epilogue:
+        always:
+          commands:
+            - test-results publish . -N "darwin/arm64"
+
+  - name: windows/amd64
+    dependencies: []
+    task:
+      agent:
+        machine:
+          type: s1-prod-windows
+      jobs:
+        - name: windows/amd64
+          commands:
+            - checkout
+            # https://confluentinc.atlassian.net/browse/DP-9532
+            - choco install -y golang --version $(Get-Content .go-version)
+            - go install gotest.tools/gotestsum@v1.8.2
+            - gotestsum --junitfile test-report.xml -- -v ./...
+      epilogue:
+        always:
+          commands:
+            - test-results publish . -N "windows/amd64"
+
+after_pipeline:
+  task:
+    jobs:
+      - name: Publish Results
+        commands:
+          - test-results gen-pipeline-report
 
 promotions:
   - name: Release
