@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	prompt "github.com/confluentinc/go-prompt"
+	"github.com/confluentinc/go-prompt"
 )
 
 type RequestContext struct {

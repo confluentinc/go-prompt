@@ -5,14 +5,14 @@ import (
 	"os"
 	"strings"
 
-	prompt "github.com/confluentinc/go-prompt"
+	"github.com/confluentinc/go-prompt"
 	"github.com/confluentinc/go-prompt/completer"
 )
 
 var filePathCompleter = completer.FilePathCompleter{
 	IgnoreCase: true,
-	Filter: func(fi os.FileInfo) bool {
-		return fi.IsDir() || strings.HasSuffix(fi.Name(), ".go")
+	Filter: func(entry os.DirEntry) bool {
+		return entry.IsDir() || strings.HasSuffix(entry.Name(), ".go")
 	},
 }
 
