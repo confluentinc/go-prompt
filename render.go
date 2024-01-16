@@ -23,6 +23,7 @@ type Render struct {
 	previousCursor int
 
 	// colors,
+	diagnostics                  []lsp.Diagnostic
 	prefixTextColor              Color
 	prefixBGColor                Color
 	inputTextColor               Color
