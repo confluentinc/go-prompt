@@ -48,7 +48,6 @@ type IPrompt interface {
 type Prompt struct {
 	in                    ConsoleParser
 	buf                   *Buffer
-	diagnostics           []lsp.Diagnostic
 	prevText              string
 	lastKey               Key
 	renderer              *Render
