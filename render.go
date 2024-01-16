@@ -173,11 +173,6 @@ func (r *Render) ClearScreen() {
 
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
-	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
-	if buffer.Text() != previousText {
-		r.diagnostics = nil
-	}
-
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -200,6 +195,11 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
+
+	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if buffer.Text() != previousText {
+		r.diagnostics = nil
+	}
 
 	// Clear screen
 	r.clear(r.previousCursor)
@@ -265,7 +265,7 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 }
 
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
-	if lexer.IsEnabled {
+	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
 		pos := 0
