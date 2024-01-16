@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/go-prompt/internal/debug"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // Executor is called when user input something text.
@@ -40,12 +41,14 @@ type IPrompt interface {
 	SetCompletionOnDown(bool)
 	SetExitChecker(ExitChecker)
 	SetStatementTerminatorCb(StatementTerminatorCb)
+	SetDiagnostics(diagnostics []lsp.Diagnostic)
 }
 
 // Prompt is core struct of go-prompt.
 type Prompt struct {
 	in                    ConsoleParser
 	buf                   *Buffer
+	diagnostics           []lsp.Diagnostic
 	prevText              string
 	lastKey               Key
 	renderer              *Render
@@ -247,6 +250,11 @@ func (p *Prompt) SetExitChecker(exitChecker ExitChecker) {
 
 func (p *Prompt) SetStatementTerminatorCb(statementTerminatorCb StatementTerminatorCb) {
 	p.statementTerminatorCb = statementTerminatorCb
+}
+
+func (p *Prompt) SetDiagnostics(diagnostics []lsp.Diagnostic) {
+	p.renderer.diagnostics = diagnostics
+	p.renderer.Render(p.buf, p.buf.Text(), p.lastKey, p.completion, p.lexer)
 }
 
 func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
