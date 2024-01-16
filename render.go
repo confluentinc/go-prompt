@@ -7,6 +7,7 @@ import (
 
 	"github.com/confluentinc/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // Render to render prompt information from state of Buffer.
@@ -22,6 +23,7 @@ type Render struct {
 	previousCursor int
 
 	// colors,
+	diagnostics                  []lsp.Diagnostic
 	prefixTextColor              Color
 	prefixBGColor                Color
 	inputTextColor               Color
@@ -171,15 +173,9 @@ func (r *Render) ClearScreen() {
 
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
-	mockDiagnostic := lsp.Diagnostic{
-		Range: lsp.Range{
-			Start: lsp.Position{Line: 0, Character: 0},
-			End:   lsp.Position{Line: 0, Character: 10},
-		},
-		Severity: 1,
-		Code:     "1234",
-		Source:   "mock source",
-		Message:  "mock message",
+	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if buffer.Text() != previousText {
+		r.diagnostics = nil
 	}
 
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
@@ -212,7 +208,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	// if diagnostics is on, we have to redefine lexer here
-	r.renderLine(line, lexer, []lsp.Diagnostic{mockDiagnostic})
+	r.renderLine(line, lexer, r.diagnostics)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
