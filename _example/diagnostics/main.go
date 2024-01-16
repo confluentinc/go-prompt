@@ -98,5 +98,5 @@ func main() {
 		}
 	}()
 
-	in := p.Input()
+	p.Input()
 }
