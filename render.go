@@ -264,6 +264,34 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 	return false
 }
 
+func (r *Render) renderDiagnostic(word string) {
+	if len(word) < 1 {
+		return
+	}
+
+	// Is first char whitespace
+	if word[0] == ' ' {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+		word = word[1:]
+	}
+
+	// Is last char whitespace
+	traillingWhitespace := false
+	if len(word) > 1 && word[len(word)-1] == ' ' {
+		traillingWhitespace = true
+		word = word[:len(word)-1]
+	}
+
+	r.out.SetColor(White, Red, false)
+	r.out.WriteStr(word)
+
+	if traillingWhitespace {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+	}
+}
+
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
 	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
@@ -276,11 +304,12 @@ func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnos
 			pos += len(a[0])
 
 			if hasDiagnostic(pos, diagnostics) {
-				r.out.SetColor(White, Red, false)
+				r.renderDiagnostic(a[0])
 			} else {
 				r.out.SetColor(v.Color, r.inputBGColor, false)
+				r.out.WriteStr(a[0])
 			}
-			r.out.WriteStr(a[0])
+
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
