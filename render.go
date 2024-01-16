@@ -196,6 +196,11 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
 
+	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if buffer.Text() != previousText {
+		r.diagnostics = nil
+	}
+
 	// Clear screen
 	r.clear(r.previousCursor)
 
@@ -288,6 +293,7 @@ func (r *Render) renderDiagnostic(word string) {
 }
 
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
+	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
 		pos := 0

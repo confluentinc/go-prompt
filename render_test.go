@@ -175,6 +175,132 @@ func TestLinesToTracebackRender(t *testing.T) {
 	}
 }
 
+func TestDiagnosticsOnArrowKeys(t *testing.T) {
+	const selectAFrom = "select a from"
+	scenarios := []struct {
+		previousText     string
+		nextText         string
+		linesToTraceBack int
+		lastKey          Key
+	}{
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Up},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Left},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Right},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Down},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Escape},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+	diagnostics := []lsp.Diagnostic{{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}}
+
+	r := &Render{
+		diagnostics:        diagnostics,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.nextText, false, true)
+		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+
+		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		require.NotNil(t, r.diagnostics)
+	}
+}
+
+func TestDiagnosticsNilOnTextChange(t *testing.T) {
+	const selectAFrom = "select a from"
+	scenarios := []struct {
+		previousText     string
+		nextText         string
+		linesToTraceBack int
+		lastKey          Key
+	}{
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Enter},
+		{previousText: selectAFrom, nextText: "select a fro", linesToTraceBack: 0, lastKey: Enter},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+	diagnostics := []lsp.Diagnostic{{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}}
+
+	r := &Render{
+		diagnostics:        diagnostics,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.nextText, false, true)
+		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+
+		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+	}
+	require.Nil(t, r.diagnostics)
+}
+
+func TestDiagnosticsAlwaysNil(t *testing.T) {
+	const selectAFrom = "select a from"
+	scenarios := []struct {
+		previousText     string
+		nextText         string
+		linesToTraceBack int
+		lastKey          Key
+	}{
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Up},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Left},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Right},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Down},
+		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Escape},
+		{previousText: selectAFrom, nextText: "another text", linesToTraceBack: 0, lastKey: Escape},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+
+	r := &Render{
+		diagnostics:        nil,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.nextText, false, true)
+		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+
+		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		require.Nil(t, r.diagnostics)
+	}
+}
+
 func TestGetCursorEndPosition(t *testing.T) {
 	r := &Render{
 		prefix:                       "> ",
