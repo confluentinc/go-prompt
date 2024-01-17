@@ -9,7 +9,17 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
-var specialSplitTokens = map[int32]uint8{
+func completer(in prompt.Document) []prompt.Suggest {
+	s := []prompt.Suggest{
+		{Text: "users", Description: "Store the username and age"},
+		{Text: "articles", Description: "Store the article text posted by user"},
+		{Text: "comments", Description: "Store the text commented to articles"},
+		{Text: "groups", Description: "Combine users with specific rules"},
+	}
+	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
+}
+
+var SpecialSplitTokens = map[int32]uint8{
 	'\t': 1,
 	'\n': 1,
 	'\v': 1,
@@ -67,7 +77,7 @@ func Lexer(line string) []prompt.LexerElement {
 }
 
 func main() {
-	p := prompt.New(nil, nil,
+	p := prompt.New(nil, completer,
 		prompt.OptionTitle("sql-prompt"),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
@@ -76,6 +86,19 @@ func main() {
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
 	)
+
+	mockDiagnostic := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
+		},
+		Severity: 1,
+		Code:     "1234",
+		Source:   "mock source",
+		Message:  "Error: this is a lsp diagnostic",
+	}
+
+	p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
 
 	// We highlight the first x (0-10) characters of the first line every 5 seconds
 	go func() {
