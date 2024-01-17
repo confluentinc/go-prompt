@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"strings"
 	"time"
 
@@ -79,21 +80,22 @@ func main() {
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
 	)
 
-	mockDiagnostic := lsp.Diagnostic{
-		Range: lsp.Range{
-			Start: lsp.Position{Line: 0, Character: 0},
-			End:   lsp.Position{Line: 0, Character: 10},
-		},
-		Severity: 1,
-		Code:     "1234",
-		Source:   "mock source",
-		Message:  "mock message",
-	}
-
 	// We highlight the first 10 characters of the first line every 5 seconds
 	go func() {
 		for true {
 			time.Sleep(5 * time.Second)
+
+			mockDiagnostic := lsp.Diagnostic{
+				Range: lsp.Range{
+					Start: lsp.Position{Line: 0, Character: 0},
+					End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
+				},
+				Severity: 1,
+				Code:     "1234",
+				Source:   "mock source",
+				Message:  "mock message",
+			}
+
 			p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
 		}
 	}()
