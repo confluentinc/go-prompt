@@ -86,12 +86,12 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 	r.col = ws.Col
 }
 
-func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
+func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) int {
 	completionsSelectedIdx := completions.GetSelectedIdx()
 	completionsVerticalScroll := completions.GetVerticalScroll()
 	suggestions := completions.GetSuggestions()
 	if len(suggestions) == 0 {
-		return
+		return 0
 	}
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
@@ -160,8 +160,10 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		r.out.CursorForward(x + width - int(r.col))
 	}
 
-	r.out.CursorUp(windowHeight)
+	// TODO - comment this so we can print diagnostics
+	// r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
+	return windowHeight
 }
 
 // ClearScreen :: Clears the screen and moves the cursor to home
@@ -209,6 +211,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	// We now need to find out where the console cursor would be if it had the same position as the buffer cursor.
 	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
+
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
@@ -243,7 +246,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
 
-	r.renderCompletion(completion, cursorPos)
+	windowHeight := r.renderCompletion(completion, cursorPos)
 	r.previousCursor = cursorPos
 
 	// Dianostics
@@ -252,14 +255,12 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
-		// to cursorPosBehindSuggestion
-		// from cursorEndPosWithInsertedSuggestion
-
-		//r.out.CursorDown(1)
 		r.out.WriteStr(diagnosticsText)
-		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics, cursorPos)
-		//r.out.CursorUp(1)
+		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics+(int(r.col)*windowHeight), cursorPos)
 		r.previousCursor = cursorPos
+		//r.out.CursorUp(windowHeight)
+	} else {
+		r.out.CursorUp(windowHeight)
 	}
 
 	/* newErr := "\n error: ass"
