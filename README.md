@@ -39,6 +39,8 @@ You can export the follow envrioment variable in your terminal to enable debuggi
 export GO_PROMPT_ENABLE_LOG="true"
 ```
 
+Now search for go-prompt.log in the folder where you ran your application from.
+
 #### Projects using go-prompt
 
 * [c-bata/kube-prompt : An interactive kubernetes client featuring auto-complete written in Go.](https://github.com/c-bata/kube-prompt)
