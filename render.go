@@ -237,10 +237,39 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 		cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(suggest.Text+rest, cursorPos)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
+		// to cursorPosBehindSuggestion
+		// from cursorEndPosWithInsertedSuggestion
+
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
+
 	r.renderCompletion(completion, cursorPos)
 	r.previousCursor = cursorPos
+
+	// Dianostics
+	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
+		diagnosticsText := "\n" + r.diagnostics[0].Message
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
+		r.out.SetColor(DefaultColor, DefaultColor, false)
+
+		// to cursorPosBehindSuggestion
+		// from cursorEndPosWithInsertedSuggestion
+
+		//r.out.CursorDown(1)
+		r.out.WriteStr(diagnosticsText)
+		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics, cursorPos)
+		//r.out.CursorUp(1)
+		r.previousCursor = cursorPos
+	}
+
+	/* newErr := "\n error: ass"
+
+	cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(newErr, cursorPos)
+	r.out.SetColor(DefaultColor, DefaultColor, false)
+	cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPos)
+
+	r.renderLine(newErr, lexer)
+	r.previousCursor = cursorPos */
 
 	return traceBackLines
 }
