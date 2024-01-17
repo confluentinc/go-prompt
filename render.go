@@ -160,10 +160,8 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		r.out.CursorForward(x + width - int(r.col))
 	}
 
-	// TODO - comment this so we can print diagnostics
-	// r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	return windowHeight
+	return int(r.col) * windowHeight // the number of characters to go up
 }
 
 // ClearScreen :: Clears the screen and moves the cursor to home
@@ -186,6 +184,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	// Down, ControlN
 	traceBackLines := r.previousCursor / int(r.col) // calculate number of lines we had before
+
 	// if the new buffer is empty and we are not browsing the history using the Down/controlDown keys
 	// then we reset the traceBackLines to 0 since there's nothing to trace back/erase.
 	if len(line) == 0 && lastKeyStroke != ControlDown && lastKeyStroke != Down {
@@ -240,38 +239,25 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 		cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(suggest.Text+rest, cursorPos)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
-		// to cursorPosBehindSuggestion
-		// from cursorEndPosWithInsertedSuggestion
-
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
 
-	windowHeight := r.renderCompletion(completion, cursorPos)
-	r.previousCursor = cursorPos
+	// We have to store this to move back the cursor to the right position after rendering the completion or completion + diagnostics
+	completionLen := r.renderCompletion(completion, cursorPos)
 
 	// Dianostics
 	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
 		diagnosticsText := "\n" + r.diagnostics[0].Message
 		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
-		r.out.SetColor(DefaultColor, DefaultColor, false)
+		r.out.SetColor(Red, DefaultColor, false)
 
 		r.out.WriteStr(diagnosticsText)
-		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics+(int(r.col)*windowHeight), cursorPos)
-		r.previousCursor = cursorPos
-		//r.out.CursorUp(windowHeight)
+		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
 	} else {
-		r.out.CursorUp(windowHeight)
+		r.move(cursorPos+completionLen, cursorPos)
 	}
 
-	/* newErr := "\n error: ass"
-
-	cursorEndPosWithInsertedSuggestion := r.getCursorEndPos(newErr, cursorPos)
-	r.out.SetColor(DefaultColor, DefaultColor, false)
-	cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPos)
-
-	r.renderLine(newErr, lexer)
-	r.previousCursor = cursorPos */
-
+	r.previousCursor = cursorPos
 	return traceBackLines
 }
 
