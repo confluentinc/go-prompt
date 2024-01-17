@@ -90,7 +90,7 @@ func main() {
 				Severity: 1,
 				Code:     "1234",
 				Source:   "mock source",
-				Message:  "mock message",
+				Message:  "Error: this is a lsp diagnostic",
 			}
 
 			p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
