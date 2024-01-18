@@ -345,6 +345,37 @@ func TestGetCursorEndPosition(t *testing.T) {
 
 }
 
+func TestDiagnosticsDetail(t *testing.T) {
+	// Test with multiple diagnostics
+	diagnostics := []lsp.Diagnostic{
+		{Message: "Error 1"},
+		{Message: "Error 2"},
+		{Message: "Error 3"},
+	}
+
+	expected := "\nError 1\nError 2\nError 3"
+	actual := diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	// Test with a single diagnostic
+	diagnostics = []lsp.Diagnostic{
+		{Message: "Single Error"},
+	}
+
+	expected = "\nSingle Error"
+	actual = diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	// Test with no diagnostics
+	diagnostics = []lsp.Diagnostic{}
+
+	expected = ""
+	actual = diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	require.Equal(t, expected, actual)
+}
+
 func TestHasDiagnostic(t *testing.T) {
 	diagnostics := []lsp.Diagnostic{
 		{

@@ -111,10 +111,25 @@ func main() {
 	// We highlight the first x (0-10) characters of the first line every 5 seconds
 	go func() {
 		for {
+			diagnostics := []lsp.Diagnostic{}
 			time.Sleep(5 * time.Second)
-			mockDiagnostic.Range.End.Character = rand.Intn(10)
+			diagnitcsCount := rand.Intn(3) + 1
+			for i := 0; i < diagnitcsCount; i++ {
+				diagnostics = append(diagnostics,
+					lsp.Diagnostic{
+						Range: lsp.Range{
+							Start: lsp.Position{Line: 0, Character: 0},
+							End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
+						},
+						Severity: 1,
+						Code:     "1234",
+						Source:   "mock source",
+						Message:  "Error: this is a lsp diagnostic",
+					})
+				mockDiagnostic.Range.End.Character = i
+			}
 
-			p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
+			p.SetDiagnostics(diagnostics)
 		}
 	}()
 
