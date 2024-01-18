@@ -33,7 +33,7 @@ func main() {
 ```
 
 #### Debugging
-You can export the follow envrioment variable in your terminal to enable debugging logs in go-prompt.
+You can export the follow environment variable in your terminal to enable debugging logs in go-prompt.
 
 ```
 export GO_PROMPT_ENABLE_LOG="true"

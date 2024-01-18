@@ -223,13 +223,12 @@ func TestDiagnosticsOnArrowKeys(t *testing.T) {
 func TestDiagnosticsNilOnTextChange(t *testing.T) {
 	const selectAFrom = "select a from"
 	scenarios := []struct {
-		previousText     string
-		nextText         string
-		linesToTraceBack int
-		lastKey          Key
+		previousText string
+		nextText     string
+		lastKey      Key
 	}{
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Enter},
-		{previousText: selectAFrom, nextText: "select a fro", linesToTraceBack: 0, lastKey: Enter},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Enter},
+		{previousText: selectAFrom, nextText: "select a fro", lastKey: Enter},
 	}
 
 	buf := make([]byte, 1024)
@@ -265,17 +264,16 @@ func TestDiagnosticsNilOnTextChange(t *testing.T) {
 func TestDiagnosticsAlwaysNil(t *testing.T) {
 	const selectAFrom = "select a from"
 	scenarios := []struct {
-		previousText     string
-		nextText         string
-		linesToTraceBack int
-		lastKey          Key
+		previousText string
+		nextText     string
+		lastKey      Key
 	}{
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Up},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Left},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Right},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Down},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Escape},
-		{previousText: selectAFrom, nextText: "another text", linesToTraceBack: 0, lastKey: Escape},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Up},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Left},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Right},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Down},
+		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Escape},
+		{previousText: selectAFrom, nextText: "another text", lastKey: Escape},
 	}
 
 	buf := make([]byte, 1024)
