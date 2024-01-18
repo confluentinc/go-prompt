@@ -251,7 +251,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	// Dianostics - showing error detail at the bottom of the screen
 	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
-		diagnosticsText := "\n" + r.diagnostics[0].Message
+		diagnosticsText := diagnosticsDetail(r.diagnostics)
 		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
 		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
 
@@ -263,6 +263,16 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	r.previousCursor = cursorPos
 	return traceBackLines
+}
+
+func diagnosticsDetail(diagnostics []lsp.Diagnostic) string {
+	var messages []string
+
+	for _, diagnostic := range diagnostics {
+		messages = append(messages, "\n"+diagnostic.Message)
+	}
+
+	return strings.Join(messages, "")
 }
 
 func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
