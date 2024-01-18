@@ -23,15 +23,19 @@ type Render struct {
 	previousCursor int
 
 	// colors,
-	diagnostics                  []lsp.Diagnostic
-	prefixTextColor              Color
-	prefixBGColor                Color
+	diagnostics     []lsp.Diagnostic
+	prefixTextColor Color
+	prefixBGColor   Color
+
 	inputTextColor               Color
 	inputBGColor                 Color
 	previewSuggestionTextColor   Color
 	previewSuggestionBGColor     Color
 	suggestionTextColor          Color
 	suggestionBGColor            Color
+	diagnosticsTextColor         Color
+	diagnosticsBGColor           Color
+	diagnosticsDetailsTextColor  Color
 	selectedSuggestionTextColor  Color
 	selectedSuggestionBGColor    Color
 	descriptionTextColor         Color
@@ -256,7 +260,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
 		diagnosticsText := "\n" + r.diagnostics[0].Message
 		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
-		r.out.SetColor(Red, DefaultColor, false)
+		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
 
 		r.out.WriteStr(diagnosticsText)
 		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
@@ -300,7 +304,7 @@ func (r *Render) renderDiagnostic(word string) {
 		word = strings.TrimSuffix(word, " ")
 	}
 
-	r.out.SetColor(White, Red, false)
+	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
 	r.out.WriteStr(word)
 
 	if traillingWhitespace {
