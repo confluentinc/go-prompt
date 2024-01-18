@@ -299,6 +299,93 @@ func TestDiagnosticsAlwaysNil(t *testing.T) {
 	}
 }
 
+func TestRenderDiagnosticsMsg(t *testing.T) {
+	diagnostic := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}
+
+	diagnosticWithLinebreak := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message \n mock message",
+	}
+
+	diagnosticWithLongMsg := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock messagemock messagemock messagemock messagemock messagemock messagemock messagemock messagemock message",
+	}
+
+	scenarios := []struct {
+		initialPos    int
+		completionLen int
+		diagnostics   []lsp.Diagnostic
+	}{
+		{initialPos: 0},
+		{initialPos: 5},
+		{initialPos: 10},
+
+		{initialPos: 0, completionLen: 10},
+		{initialPos: 5, completionLen: 10},
+		{initialPos: 10, completionLen: 30},
+
+		{initialPos: 0, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 5, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+
+	r := &Render{
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		r.diagnostics = s.diagnostics
+		finalPos := r.renderDiagnosticsMsg(s.initialPos, s.completionLen)
+		// We expect cursor to be set again correctly to the initial position indeoendent of the diagnostics/completion size
+		require.Equal(t, s.initialPos, finalPos)
+	}
+}
+
 func TestGetCursorEndPosition(t *testing.T) {
 	r := &Render{
 		prefix:                       "> ",
