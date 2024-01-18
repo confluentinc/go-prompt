@@ -19,7 +19,7 @@ func completer(in prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(s, in.GetWordBeforeCursor(), true)
 }
 
-var SpecialSplitTokens = map[int32]uint8{
+var specialSplitTokens = map[int32]uint8{
 	'\t': 1,
 	'\n': 1,
 	'\v': 1,
@@ -112,17 +112,7 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(5 * time.Second)
-
-			mockDiagnostic := lsp.Diagnostic{
-				Range: lsp.Range{
-					Start: lsp.Position{Line: 0, Character: 0},
-					End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
-				},
-				Severity: 1,
-				Code:     "1234",
-				Source:   "mock source",
-				Message:  "Error: this is a lsp diagnostic",
-			}
+			mockDiagnostic.Range.End.Character = rand.Intn(10)
 
 			p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
 		}
