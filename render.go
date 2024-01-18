@@ -270,7 +270,7 @@ func (r *Render) renderDiagnostic(word string) {
 	}
 
 	// Is first char whitespace
-	if word[0] == ' ' {
+	if strings.HasPrefix(word, " ") {
 		r.out.SetColor(DefaultColor, r.inputBGColor, false)
 		r.out.WriteStr(" ")
 		word = word[1:]
@@ -278,7 +278,7 @@ func (r *Render) renderDiagnostic(word string) {
 
 	// Is last char whitespace
 	traillingWhitespace := false
-	if len(word) > 1 && word[len(word)-1] == ' ' {
+	if len(word) > 1 && strings.HasSuffix(word, " ") {
 		traillingWhitespace = true
 		word = word[:len(word)-1]
 	}
