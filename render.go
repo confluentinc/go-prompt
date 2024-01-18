@@ -217,6 +217,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
 
+	// If suggestion is select for preview
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
@@ -248,10 +249,10 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
 
-	// We have to store this to move back the cursor to the right position after rendering the completion or completion + diagnostics
+	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
 	completionLen := r.renderCompletion(completion, cursorPos)
 
-	// Dianostics
+	// Dianostics - showing error detail at the bottom of the screen
 	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
 		diagnosticsText := "\n" + r.diagnostics[0].Message
 		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
