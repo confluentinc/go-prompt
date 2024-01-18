@@ -85,6 +85,14 @@ func main() {
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
+		prompt.OptionSetStatementTerminator(func(lastKeyStroke prompt.Key, buffer *prompt.Buffer) bool {
+			text := buffer.Text()
+			text = strings.TrimSpace(text)
+			if text == "" {
+				return false
+			}
+			return text == "exit" || strings.HasSuffix(text, ";") || lastKeyStroke == prompt.AltEnter
+		}),
 	)
 
 	mockDiagnostic := lsp.Diagnostic{
