@@ -9,7 +9,7 @@ import (
 	"github.com/sourcegraph/go-lsp"
 )
 
-var SpecialSplitTokens = map[int32]uint8{
+var specialSplitTokens = map[int32]uint8{
 	'\t': 1,
 	'\n': 1,
 	'\v': 1,
@@ -28,7 +28,7 @@ func splitWithSeparators(line string) []string {
 	word := ""
 
 	for _, char := range line {
-		if _, ok := SpecialSplitTokens[char]; ok {
+		if _, ok := specialSplitTokens[char]; ok {
 			if word != "" {
 				words = append(words, word)
 			}
@@ -44,7 +44,7 @@ func splitWithSeparators(line string) []string {
 	return words
 }
 
-/* This outputs words all characters in the line with their respective color */
+/* This outputs all words in the line with their respective color */
 func Lexer(line string) []prompt.LexerElement {
 	lexerWords := []prompt.LexerElement{}
 
@@ -55,13 +55,10 @@ func Lexer(line string) []prompt.LexerElement {
 	words := splitWithSeparators(line)
 
 	for _, word := range words {
-		element := prompt.LexerElement{}
-
+		element := prompt.LexerElement{Text: word}
 		if strings.ToLower(word) == "select" {
 			element.Color = prompt.Yellow
 		}
-
-		element.Text = word
 
 		lexerWords = append(lexerWords, element)
 	}
@@ -80,9 +77,9 @@ func main() {
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
 	)
 
-	// We highlight the first 10 characters of the first line every 5 seconds
+	// We highlight the first x (0-10) characters of the first line every 5 seconds
 	go func() {
-		for true {
+		for {
 			time.Sleep(5 * time.Second)
 
 			mockDiagnostic := lsp.Diagnostic{
