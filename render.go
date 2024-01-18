@@ -256,17 +256,8 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
 	completionLen := r.renderCompletion(completion, cursorPos)
 
-	// Dianostics - showing error detail at the bottom of the screen
-	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
-		diagnosticsText := diagnosticsDetail(r.diagnostics)
-		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
-		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
-
-		r.out.WriteStr(diagnosticsText)
-		cursorPos = r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
-	} else {
-		r.move(cursorPos+completionLen, cursorPos)
-	}
+	// Render dianostics messages - showing error detail at the bottom of the screen
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen)
 
 	r.previousCursor = cursorPos
 	return traceBackLines
@@ -293,6 +284,19 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 	}
 
 	return false
+}
+
+func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int) int {
+	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
+		diagnosticsText := diagnosticsDetail(r.diagnostics)
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
+		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
+
+		r.out.WriteStr(diagnosticsText)
+		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
+	} else {
+		return r.move(cursorPos+completionLen, cursorPos)
+	}
 }
 
 func (r *Render) renderDiagnostic(word string) {
