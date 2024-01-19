@@ -89,6 +89,7 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 	r.col = ws.Col
 }
 
+// Render completions in the dropdown and returns the lenth that the cursor has to be moved back
 func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) int {
 	completionsSelectedIdx := completions.GetSelectedIdx()
 	completionsVerticalScroll := completions.GetVerticalScroll()
@@ -279,6 +280,7 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 	return false
 }
 
+// Render diagnostics and returns the length that the cursor has to be moved back
 func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int) int {
 	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
 		diagnosticsText := diagnosticsDetail(r.diagnostics)
