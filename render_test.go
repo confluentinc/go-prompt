@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sourcegraph/go-lsp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -174,6 +175,212 @@ func TestLinesToTracebackRender(t *testing.T) {
 	}
 }
 
+func TestDiagnosticsOnArrowKeys(t *testing.T) {
+	const selectAFrom = "select a from"
+	scenarios := []struct {
+		lastKey Key
+	}{
+		{lastKey: Up},
+		{lastKey: Left},
+		{lastKey: Right},
+		{lastKey: Down},
+		{lastKey: Escape},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+	diagnostics := []lsp.Diagnostic{{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}}
+
+	r := &Render{
+		diagnostics:        diagnostics,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(selectAFrom, false, true)
+		r.previousCursor = r.getCursorEndPos(selectAFrom, 0)
+
+		r.Render(b, selectAFrom, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		require.NotNil(t, r.diagnostics, fmt.Sprintf("Scenario #%d", idx))
+	}
+}
+
+func TestDiagnosticsNilOnTextChange(t *testing.T) {
+	const selectAFrom = "select a from"
+	scenarios := []struct {
+		nextText string
+	}{
+		{nextText: selectAFrom},
+		{nextText: "select a fro"},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+	diagnostics := []lsp.Diagnostic{{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}}
+
+	r := &Render{
+		diagnostics:        diagnostics,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.nextText, false, true)
+		r.previousCursor = r.getCursorEndPos(selectAFrom, 0)
+
+		r.Render(b, selectAFrom, Enter, NewCompletionManager(emptyCompleter, 0), nil)
+	}
+	require.Nil(t, r.diagnostics)
+}
+
+func TestDiagnosticsAlwaysNil(t *testing.T) {
+	const selectAFrom = "select a from"
+	const previousText = selectAFrom
+	scenarios := []struct {
+		nextText string
+		lastKey  Key
+	}{
+		{nextText: selectAFrom, lastKey: Up},
+		{nextText: selectAFrom, lastKey: Left},
+		{nextText: selectAFrom, lastKey: Right},
+		{nextText: selectAFrom, lastKey: Down},
+		{nextText: selectAFrom, lastKey: Escape},
+		{nextText: "another text", lastKey: Escape},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+
+	r := &Render{
+		diagnostics:        nil,
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		b := NewBuffer()
+		b.InsertText(s.nextText, false, true)
+		r.previousCursor = r.getCursorEndPos(previousText, 0)
+
+		r.Render(b, previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		require.Nil(t, r.diagnostics)
+	}
+}
+
+func TestRenderDiagnosticsMsg(t *testing.T) {
+	diagnostic := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message",
+	}
+
+	diagnosticWithLinebreak := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock message \n mock message",
+	}
+
+	diagnosticWithLongMsg := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{Line: 0, Character: 0},
+			End:   lsp.Position{Line: 0, Character: 10},
+		},
+		Message: "mock messagemock messagemock messagemock messagemock messagemock messagemock messagemock messagemock message",
+	}
+
+	scenarios := []struct {
+		initialPos    int
+		completionLen int
+		diagnostics   []lsp.Diagnostic
+	}{
+		{initialPos: 0},
+		{initialPos: 5},
+		{initialPos: 10},
+
+		{initialPos: 0, completionLen: 10},
+		{initialPos: 5, completionLen: 10},
+		{initialPos: 10, completionLen: 30},
+
+		{initialPos: 0, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 5, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnostic}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnosticWithLinebreak}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLinebreak}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnosticWithLongMsg}},
+
+		{initialPos: 0, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+		{initialPos: 5, completionLen: 10, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+		{initialPos: 10, completionLen: 30, diagnostics: []lsp.Diagnostic{diagnostic, diagnosticWithLongMsg}},
+	}
+
+	buf := make([]byte, 1024)
+	writer := VT100Writer{buffer: buf}
+	posixWriter := &PosixWriter{writer, 0}
+
+	r := &Render{
+		out:                posixWriter,
+		livePrefixCallback: func() (string, bool) { return "", false },
+		col:                100,
+		row:                100,
+	}
+
+	for idx, s := range scenarios {
+		fmt.Printf("Testing scenario: %v\n", idx)
+		r.diagnostics = s.diagnostics
+		finalPos := r.renderDiagnosticsMsg(s.initialPos, s.completionLen)
+		// We expect cursor to be set again correctly to the initial position indeoendent of the diagnostics/completion size
+		require.Equal(t, s.initialPos, finalPos)
+	}
+}
+
 func TestGetCursorEndPosition(t *testing.T) {
 	r := &Render{
 		prefix:                       "> ",
@@ -223,4 +430,68 @@ func TestGetCursorEndPosition(t *testing.T) {
 		require.Equal(t, s.expectedCursorEndPos, actualEndPos)
 	}
 
+}
+
+func TestDiagnosticsDetail(t *testing.T) {
+	// Test with multiple diagnostics
+	diagnostics := []lsp.Diagnostic{
+		{Message: "Error 1"},
+		{Message: "Error 2"},
+		{Message: "Error 3"},
+	}
+
+	expected := "\nError 1\nError 2\nError 3"
+	actual := diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	// Test with a single diagnostic
+	diagnostics = []lsp.Diagnostic{
+		{Message: "Single Error"},
+	}
+
+	expected = "\nSingle Error"
+	actual = diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	// Test with no diagnostics
+	diagnostics = []lsp.Diagnostic{}
+
+	expected = ""
+	actual = diagnosticsDetail(diagnostics)
+	require.Equal(t, expected, actual)
+
+	require.Equal(t, expected, actual)
+}
+
+func TestHasDiagnostic(t *testing.T) {
+	diagnostics := []lsp.Diagnostic{
+		{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: 0, Character: 0},
+				End:   lsp.Position{Line: 0, Character: 10},
+			},
+		},
+		{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: 0, Character: 20},
+				End:   lsp.Position{Line: 0, Character: 30},
+			},
+		},
+	}
+
+	// Test within range
+	require.True(t, hasDiagnostic(5, diagnostics))
+	require.True(t, hasDiagnostic(25, diagnostics))
+
+	// Test on the boundaries
+	require.True(t, hasDiagnostic(0, diagnostics))
+	require.True(t, hasDiagnostic(10, diagnostics))
+	require.True(t, hasDiagnostic(20, diagnostics))
+	require.True(t, hasDiagnostic(30, diagnostics))
+
+	// Test outside of range
+	require.False(t, hasDiagnostic(-1, diagnostics))
+	require.False(t, hasDiagnostic(11, diagnostics))
+	require.False(t, hasDiagnostic(19, diagnostics))
+	require.False(t, hasDiagnostic(31, diagnostics))
 }
