@@ -7,6 +7,7 @@ import (
 
 	"github.com/confluentinc/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // Render to render prompt information from state of Buffer.
@@ -22,14 +23,19 @@ type Render struct {
 	previousCursor int
 
 	// colors,
-	prefixTextColor              Color
-	prefixBGColor                Color
+	diagnostics     []lsp.Diagnostic
+	prefixTextColor Color
+	prefixBGColor   Color
+
 	inputTextColor               Color
 	inputBGColor                 Color
 	previewSuggestionTextColor   Color
 	previewSuggestionBGColor     Color
 	suggestionTextColor          Color
 	suggestionBGColor            Color
+	diagnosticsTextColor         Color
+	diagnosticsBGColor           Color
+	diagnosticsDetailsTextColor  Color
 	selectedSuggestionTextColor  Color
 	selectedSuggestionBGColor    Color
 	descriptionTextColor         Color
@@ -85,12 +91,12 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 	r.col = ws.Col
 }
 
-func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
+func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) int {
 	completionsSelectedIdx := completions.GetSelectedIdx()
 	completionsVerticalScroll := completions.GetVerticalScroll()
 	suggestions := completions.GetSuggestions()
 	if len(suggestions) == 0 {
-		return
+		return 0
 	}
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
@@ -159,8 +165,8 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		r.out.CursorForward(x + width - int(r.col))
 	}
 
-	r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
+	return int(r.col) * windowHeight // the number of characters to go up
 }
 
 // ClearScreen :: Clears the screen and moves the cursor to home
@@ -171,7 +177,6 @@ func (r *Render) ClearScreen() {
 
 // Render renders to the console.
 func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
-
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -184,6 +189,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 	// Down, ControlN
 	traceBackLines := r.previousCursor / int(r.col) // calculate number of lines we had before
+
 	// if the new buffer is empty and we are not browsing the history using the Down/controlDown keys
 	// then we reset the traceBackLines to 0 since there's nothing to trace back/erase.
 	if len(line) == 0 && lastKeyStroke != ControlDown && lastKeyStroke != Down {
@@ -195,19 +201,27 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
 
+	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if buffer.Text() != previousText {
+		r.diagnostics = nil
+	}
+
 	// Clear screen
 	r.clear(r.previousCursor)
 
 	// Render new text
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	r.renderLine(line, lexer)
+	// if diagnostics is on, we have to redefine lexer here
+	r.renderLine(line, lexer, r.diagnostics)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
 	// We now need to find out where the console cursor would be if it had the same position as the buffer cursor.
 	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
+
+	// If suggestion is select for preview
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
@@ -238,23 +252,99 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
-	r.renderCompletion(completion, cursorPos)
-	r.previousCursor = cursorPos
 
+	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
+	completionLen := r.renderCompletion(completion, cursorPos)
+
+	// Render dianostics messages - showing error detail at the bottom of the screen
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen)
+
+	r.previousCursor = cursorPos
 	return traceBackLines
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer) {
-	if lexer.IsEnabled {
+func diagnosticsDetail(diagnostics []lsp.Diagnostic) string {
+	var messages []string
+
+	for _, diagnostic := range diagnostics {
+		messages = append(messages, "\n"+diagnostic.Message)
+	}
+
+	return strings.Join(messages, "")
+}
+
+func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
+	for _, diagnostic := range diagnostics {
+		start := diagnostic.Range.Start.Character
+		end := diagnostic.Range.End.Character
+
+		if pos >= start && pos <= end {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int) int {
+	if len(r.diagnostics) > 0 && len(r.diagnostics[0].Message) > 0 {
+		diagnosticsText := diagnosticsDetail(r.diagnostics)
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
+		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
+
+		r.out.WriteStr(diagnosticsText)
+		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
+	} else {
+		return r.move(cursorPos+completionLen, cursorPos)
+	}
+}
+
+func (r *Render) renderDiagnostic(word string) {
+	if len(word) < 1 {
+		return
+	}
+
+	// Is first char whitespace
+	if strings.HasPrefix(word, " ") {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+		word = strings.TrimPrefix(word, " ")
+	}
+
+	// Is last char whitespace
+	traillingWhitespace := false
+	if len(word) > 1 && strings.HasSuffix(word, " ") {
+		traillingWhitespace = true
+		word = strings.TrimSuffix(word, " ")
+	}
+
+	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
+	r.out.WriteStr(word)
+
+	if traillingWhitespace {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+	}
+}
+
+func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
+	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
-
+		pos := 0
 		for _, v := range processed {
 			a := strings.SplitAfter(s, v.Text)
 			s = strings.TrimPrefix(s, a[0])
 
-			r.out.SetColor(v.Color, r.inputBGColor, false)
-			r.out.WriteStr(a[0])
+			pos += len(a[0])
+
+			if hasDiagnostic(pos, diagnostics) {
+				r.renderDiagnostic(a[0])
+			} else {
+				r.out.SetColor(v.Color, r.inputBGColor, false)
+				r.out.WriteStr(a[0])
+			}
+
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
