@@ -258,17 +258,17 @@ func TestDiagnosticsNilOnTextChange(t *testing.T) {
 
 func TestDiagnosticsAlwaysNil(t *testing.T) {
 	const selectAFrom = "select a from"
+	const previousText = selectAFrom
 	scenarios := []struct {
-		previousText string
-		nextText     string
-		lastKey      Key
+		nextText string
+		lastKey  Key
 	}{
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Up},
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Left},
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Right},
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Down},
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Escape},
-		{previousText: selectAFrom, nextText: "another text", lastKey: Escape},
+		{nextText: selectAFrom, lastKey: Up},
+		{nextText: selectAFrom, lastKey: Left},
+		{nextText: selectAFrom, lastKey: Right},
+		{nextText: selectAFrom, lastKey: Down},
+		{nextText: selectAFrom, lastKey: Escape},
+		{nextText: "another text", lastKey: Escape},
 	}
 
 	buf := make([]byte, 1024)
@@ -287,9 +287,9 @@ func TestDiagnosticsAlwaysNil(t *testing.T) {
 		fmt.Printf("Testing scenario: %v\n", idx)
 		b := NewBuffer()
 		b.InsertText(s.nextText, false, true)
-		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+		r.previousCursor = r.getCursorEndPos(previousText, 0)
 
-		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		r.Render(b, previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
 		require.Nil(t, r.diagnostics)
 	}
 }
