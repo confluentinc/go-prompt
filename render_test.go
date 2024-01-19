@@ -213,7 +213,7 @@ func TestDiagnosticsOnArrowKeys(t *testing.T) {
 		r.previousCursor = r.getCursorEndPos(selectAFrom, 0)
 
 		r.Render(b, selectAFrom, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
-		require.NotNil(t, r.diagnostics)
+		require.NotNil(t, r.diagnostics, fmt.Sprintf("Scenario #%d", idx))
 	}
 }
 
