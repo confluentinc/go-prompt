@@ -273,14 +273,14 @@ func (r *Render) renderDiagnostic(word string) {
 	if strings.HasPrefix(word, " ") {
 		r.out.SetColor(DefaultColor, r.inputBGColor, false)
 		r.out.WriteStr(" ")
-		word = word[1:]
+		word = strings.TrimPrefix(word, " ")
 	}
 
 	// Is last char whitespace
 	traillingWhitespace := false
 	if len(word) > 1 && strings.HasSuffix(word, " ") {
 		traillingWhitespace = true
-		word = word[:len(word)-1]
+		word = strings.TrimSuffix(word, " ")
 	}
 
 	r.out.SetColor(White, Red, false)
