@@ -22,6 +22,10 @@ A simple [http-prompt](https://github.com/eliangcs/http-prompt) implementation u
 A example application which changes a prefix string dynamically.
 This feature is used like [ktr0731/evans](https://github.com/ktr0731/evans) which is interactive gRPC client using go-prompt.
 
+## diagnostics
+
+A example application which sends static diagnostics every couple of seconds.
+
 ## exec-command
 
 Run another CLI tool via `os/exec` package.
