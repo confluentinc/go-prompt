@@ -178,16 +178,13 @@ func TestLinesToTracebackRender(t *testing.T) {
 func TestDiagnosticsOnArrowKeys(t *testing.T) {
 	const selectAFrom = "select a from"
 	scenarios := []struct {
-		previousText     string
-		nextText         string
-		linesToTraceBack int
-		lastKey          Key
+		lastKey Key
 	}{
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Up},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Left},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Right},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Down},
-		{previousText: selectAFrom, nextText: selectAFrom, linesToTraceBack: 0, lastKey: Escape},
+		{lastKey: Up},
+		{lastKey: Left},
+		{lastKey: Right},
+		{lastKey: Down},
+		{lastKey: Escape},
 	}
 
 	buf := make([]byte, 1024)
@@ -212,10 +209,10 @@ func TestDiagnosticsOnArrowKeys(t *testing.T) {
 	for idx, s := range scenarios {
 		fmt.Printf("Testing scenario: %v\n", idx)
 		b := NewBuffer()
-		b.InsertText(s.nextText, false, true)
-		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+		b.InsertText(selectAFrom, false, true)
+		r.previousCursor = r.getCursorEndPos(selectAFrom, 0)
 
-		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		r.Render(b, selectAFrom, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
 		require.NotNil(t, r.diagnostics)
 	}
 }
@@ -223,12 +220,10 @@ func TestDiagnosticsOnArrowKeys(t *testing.T) {
 func TestDiagnosticsNilOnTextChange(t *testing.T) {
 	const selectAFrom = "select a from"
 	scenarios := []struct {
-		previousText string
-		nextText     string
-		lastKey      Key
+		nextText string
 	}{
-		{previousText: selectAFrom, nextText: selectAFrom, lastKey: Enter},
-		{previousText: selectAFrom, nextText: "select a fro", lastKey: Enter},
+		{nextText: selectAFrom},
+		{nextText: "select a fro"},
 	}
 
 	buf := make([]byte, 1024)
@@ -254,9 +249,9 @@ func TestDiagnosticsNilOnTextChange(t *testing.T) {
 		fmt.Printf("Testing scenario: %v\n", idx)
 		b := NewBuffer()
 		b.InsertText(s.nextText, false, true)
-		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
+		r.previousCursor = r.getCursorEndPos(selectAFrom, 0)
 
-		r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), nil)
+		r.Render(b, selectAFrom, Enter, NewCompletionManager(emptyCompleter, 0), nil)
 	}
 	require.Nil(t, r.diagnostics)
 }
