@@ -23,7 +23,6 @@ type Render struct {
 	previousCursor int
 
 	// colors,
-	diagnostics                  []lsp.Diagnostic
 	prefixTextColor              Color
 	prefixBGColor                Color
 	inputTextColor               Color
@@ -172,7 +171,7 @@ func (r *Render) ClearScreen() {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
+func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer, diagnostics []lsp.Diagnostic) (tracedBackLines int) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -196,11 +195,6 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
 
-	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
-	if buffer.Text() != previousText {
-		r.diagnostics = nil
-	}
-
 	// Clear screen
 	r.clear(r.previousCursor)
 
@@ -208,7 +202,7 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	// if diagnostics is on, we have to redefine lexer here
-	r.renderLine(line, lexer, r.diagnostics)
+	r.renderLine(line, lexer, diagnostics)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
