@@ -7,6 +7,7 @@ import (
 
 	"github.com/confluentinc/go-prompt/internal/debug"
 	runewidth "github.com/mattn/go-runewidth"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // Render to render prompt information from state of Buffer.
@@ -170,8 +171,7 @@ func (r *Render) ClearScreen() {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer) (tracedBackLines int) {
-
+func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer, diagnostics []lsp.Diagnostic) (tracedBackLines int) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -201,7 +201,8 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	// Render new text
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
-	r.renderLine(line, lexer)
+	// if diagnostics is on, we have to redefine lexer here
+	r.renderLine(line, lexer, diagnostics)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
@@ -244,17 +245,65 @@ func (r *Render) Render(buffer *Buffer, previousText string, lastKeyStroke Key, 
 	return traceBackLines
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer) {
-	if lexer.IsEnabled {
+func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
+	for _, diagnostic := range diagnostics {
+		start := diagnostic.Range.Start.Character
+		end := diagnostic.Range.End.Character
+
+		if pos >= start && pos <= end {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r *Render) renderDiagnostic(word string) {
+	if len(word) < 1 {
+		return
+	}
+
+	// Is first char whitespace
+	if strings.HasPrefix(word, " ") {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+		word = strings.TrimPrefix(word, " ")
+	}
+
+	// Is last char whitespace
+	traillingWhitespace := false
+	if len(word) > 1 && strings.HasSuffix(word, " ") {
+		traillingWhitespace = true
+		word = strings.TrimSuffix(word, " ")
+	}
+
+	r.out.SetColor(White, Red, false)
+	r.out.WriteStr(word)
+
+	if traillingWhitespace {
+		r.out.SetColor(DefaultColor, r.inputBGColor, false)
+		r.out.WriteStr(" ")
+	}
+}
+
+func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
+	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
-
+		pos := 0
 		for _, v := range processed {
 			a := strings.SplitAfter(s, v.Text)
 			s = strings.TrimPrefix(s, a[0])
 
-			r.out.SetColor(v.Color, r.inputBGColor, false)
-			r.out.WriteStr(a[0])
+			pos += len(a[0])
+
+			if hasDiagnostic(pos, diagnostics) {
+				r.renderDiagnostic(a[0])
+			} else {
+				r.out.SetColor(v.Color, r.inputBGColor, false)
+				r.out.WriteStr(a[0])
+			}
+
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
