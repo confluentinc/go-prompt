@@ -23,7 +23,6 @@ type Render struct {
 	previousCursor int
 
 	// colors,
-	diagnostics                  []lsp.Diagnostic
 	prefixTextColor              Color
 	prefixBGColor                Color
 	inputTextColor               Color
@@ -195,11 +194,6 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	// prepare area by getting the end position the console cursor will be at after rendering
 	cursorEndPos := r.getCursorEndPos(prefix+line, 0)
-
-	// If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
-	if buffer.Text() != previousText {
-		r.diagnostics = nil
-	}
 
 	// Clear screen
 	r.clear(r.previousCursor)

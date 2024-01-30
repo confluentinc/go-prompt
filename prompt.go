@@ -141,6 +141,18 @@ func (p *Prompt) Run() {
 	}
 }
 
+func (p *Prompt) Render() {
+	p.ClearDiagnosticsOnTextChange()
+	p.renderer.Render(p.buf, p.lastKey, p.completion, p.lexer, p.diagnostics)
+}
+
+func (p *Prompt) ClearDiagnosticsOnTextChange() {
+	//  If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if p.buf.Text() != p.prevText {
+		p.diagnostics = nil
+	}
+}
+
 // Input just returns user input text.
 func (p *Prompt) Input() string {
 	defer debug.Teardown()
