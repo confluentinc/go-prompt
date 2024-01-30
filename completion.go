@@ -89,6 +89,10 @@ func (c *CompletionManager) reset() {
 
 // Update to update the suggestions.
 func (c *CompletionManager) Update(in Document) {
+	if c.completer == nil {
+		return
+	}
+
 	updatedSuggestions := c.completer(in)
 
 	c.mu.Lock()

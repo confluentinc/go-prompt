@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/sourcegraph/go-lsp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -169,7 +170,7 @@ func TestLinesToTracebackRender(t *testing.T) {
 		l := NewLexer()
 
 		r.previousCursor = r.getCursorEndPos(s.previousText, 0)
-		tracedBackLines := r.Render(b, s.previousText, s.lastKey, NewCompletionManager(emptyCompleter, 0), l)
+		tracedBackLines := r.Render(b, s.lastKey, NewCompletionManager(emptyCompleter, 0), l, nil)
 		require.Equal(t, s.linesToTraceBack, tracedBackLines)
 	}
 }
@@ -223,4 +224,37 @@ func TestGetCursorEndPosition(t *testing.T) {
 		require.Equal(t, s.expectedCursorEndPos, actualEndPos)
 	}
 
+}
+
+func TestHasDiagnostic(t *testing.T) {
+	diagnostics := []lsp.Diagnostic{
+		{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: 0, Character: 0},
+				End:   lsp.Position{Line: 0, Character: 10},
+			},
+		},
+		{
+			Range: lsp.Range{
+				Start: lsp.Position{Line: 0, Character: 20},
+				End:   lsp.Position{Line: 0, Character: 30},
+			},
+		},
+	}
+
+	// Test within range
+	require.True(t, hasDiagnostic(5, diagnostics))
+	require.True(t, hasDiagnostic(25, diagnostics))
+
+	// Test on the boundaries
+	require.True(t, hasDiagnostic(0, diagnostics))
+	require.True(t, hasDiagnostic(10, diagnostics))
+	require.True(t, hasDiagnostic(20, diagnostics))
+	require.True(t, hasDiagnostic(30, diagnostics))
+
+	// Test outside of range
+	require.False(t, hasDiagnostic(-1, diagnostics))
+	require.False(t, hasDiagnostic(11, diagnostics))
+	require.False(t, hasDiagnostic(19, diagnostics))
+	require.False(t, hasDiagnostic(31, diagnostics))
 }
