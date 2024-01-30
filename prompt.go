@@ -255,6 +255,7 @@ func (p *Prompt) SetStatementTerminatorCb(statementTerminatorCb StatementTermina
 
 func (p *Prompt) SetDiagnostics(diagnostics []lsp.Diagnostic) {
 	p.diagnostics = diagnostics
+	p.prevText = p.buf.Text()
 	p.Render()
 }
 
