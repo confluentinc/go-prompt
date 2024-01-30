@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/go-prompt/internal/debug"
+	"github.com/sourcegraph/go-lsp"
 )
 
 // Executor is called when user input something text.
@@ -40,6 +41,7 @@ type IPrompt interface {
 	SetCompletionOnDown(bool)
 	SetExitChecker(ExitChecker)
 	SetStatementTerminatorCb(StatementTerminatorCb)
+	SetDiagnostics(diagnostics []lsp.Diagnostic)
 }
 
 // Prompt is core struct of go-prompt.
@@ -51,6 +53,7 @@ type Prompt struct {
 	renderer              *Render
 	executor              Executor
 	history               *History
+	diagnostics           []lsp.Diagnostic
 	lexer                 *Lexer
 	completion            *CompletionManager
 	keyBindings           []KeyBind
@@ -79,7 +82,7 @@ func (p *Prompt) Run() {
 		p.completion.Update(*p.buf.Document())
 	}
 
-	p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+	p.Render()
 
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
@@ -110,7 +113,7 @@ func (p *Prompt) Run() {
 
 				p.completion.Update(*p.buf.Document())
 
-				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+				p.Render()
 
 				if p.exitChecker != nil && p.exitChecker(e.input, true) {
 					p.skipTearDown = true
@@ -121,12 +124,13 @@ func (p *Prompt) Run() {
 				go p.readBuffer(bufCh, stopReadBufCh)
 				go p.handleSignals(exitCh, winSizeCh, stopHandleSignalCh)
 			} else {
+
 				p.completion.Update(*p.buf.Document())
-				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+				p.Render()
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
-			p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+			p.Render()
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf, p.lexer)
 			p.tearDown()
@@ -148,7 +152,7 @@ func (p *Prompt) Input() string {
 		p.completion.Update(*p.buf.Document())
 	}
 
-	p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+	p.Render()
 	bufCh := make(chan []byte, 128)
 	stopReadBufCh := make(chan struct{})
 	go p.readBuffer(bufCh, stopReadBufCh)
@@ -181,17 +185,17 @@ func (p *Prompt) Input() string {
 						completionCh <- true
 					}()
 				}
-				p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+				p.Render()
 			}
 		case w := <-winSizeCh:
 			p.renderer.UpdateWinSize(w)
-			p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+			p.Render()
 		case code := <-exitCh:
 			p.renderer.BreakLine(p.buf, p.lexer)
 			p.tearDown()
 			os.Exit(code)
 		case <-completionCh:
-			p.renderer.Render(p.buf, p.prevText, p.lastKey, p.completion, p.lexer)
+			p.Render()
 		}
 	}
 }
@@ -247,6 +251,23 @@ func (p *Prompt) SetExitChecker(exitChecker ExitChecker) {
 
 func (p *Prompt) SetStatementTerminatorCb(statementTerminatorCb StatementTerminatorCb) {
 	p.statementTerminatorCb = statementTerminatorCb
+}
+
+func (p *Prompt) SetDiagnostics(diagnostics []lsp.Diagnostic) {
+	p.diagnostics = diagnostics
+	p.Render()
+}
+
+func (p *Prompt) ClearDiagnosticsOnTextChange() {
+	//  If the user writes something, we clear diagnostics (highlights and error shown) because the ranges might be outdated
+	if p.buf.Text() != p.prevText {
+		p.diagnostics = nil
+	}
+}
+
+func (p *Prompt) Render() {
+	p.ClearDiagnosticsOnTextChange()
+	p.renderer.Render(p.buf, p.lastKey, p.completion, p.lexer, p.diagnostics)
 }
 
 func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
