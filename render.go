@@ -31,6 +31,9 @@ type Render struct {
 	previewSuggestionBGColor     Color
 	suggestionTextColor          Color
 	suggestionBGColor            Color
+	diagnosticsTextColor         Color
+	diagnosticsBGColor           Color
+	diagnosticsDetailsTextColor  Color
 	selectedSuggestionTextColor  Color
 	selectedSuggestionBGColor    Color
 	descriptionTextColor         Color
@@ -86,12 +89,13 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 	r.col = ws.Col
 }
 
-func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) {
+// Render completions in the dropdown and returns the lenth that the cursor has to be moved back
+func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) int {
 	completionsSelectedIdx := completions.GetSelectedIdx()
 	completionsVerticalScroll := completions.GetVerticalScroll()
 	suggestions := completions.GetSuggestions()
 	if len(suggestions) == 0 {
-		return
+		return 0
 	}
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
@@ -160,8 +164,8 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		r.out.CursorForward(x + width - int(r.col))
 	}
 
-	r.out.CursorUp(windowHeight)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
+	return int(r.col) * windowHeight // the number of characters to go up
 }
 
 // ClearScreen :: Clears the screen and moves the cursor to home
@@ -184,6 +188,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	// Down, ControlN
 	traceBackLines := r.previousCursor / int(r.col) // calculate number of lines we had before
+
 	// if the new buffer is empty and we are not browsing the history using the Down/controlDown keys
 	// then we reset the traceBackLines to 0 since there's nothing to trace back/erase.
 	if len(line) == 0 && lastKeyStroke != ControlDown && lastKeyStroke != Down {
@@ -209,6 +214,8 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	// We now need to find out where the console cursor would be if it had the same position as the buffer cursor.
 	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
+
+	// If suggestion is select for preview
 	if suggest, ok := completion.GetSelectedSuggestion(); ok {
 		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
 
@@ -239,10 +246,27 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
-	r.renderCompletion(completion, cursorPos)
-	r.previousCursor = cursorPos
 
+	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
+	completionLen := r.renderCompletion(completion, cursorPos)
+
+	// Render dianostics messages - showing error detail at the bottom of the screen
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen, diagnostics)
+
+	r.previousCursor = cursorPos
 	return traceBackLines
+}
+
+func diagnosticsDetail(diagnostics []lsp.Diagnostic) string {
+	var messages []string
+
+	for _, diagnostic := range diagnostics {
+		if len(diagnostic.Message) > 0 {
+			messages = append(messages, "\n"+diagnostic.Message)
+		}
+	}
+
+	return strings.Join(messages, "")
 }
 
 func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
@@ -256,6 +280,20 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 	}
 
 	return false
+}
+
+// Render diagnostics and returns the length that the cursor has to be moved back
+func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, diagnostics []lsp.Diagnostic) int {
+	if len(diagnostics) > 0 {
+		diagnosticsText := diagnosticsDetail(diagnostics)
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
+		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
+
+		r.out.WriteStr(diagnosticsText)
+		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
+	} else {
+		return r.move(cursorPos+completionLen, cursorPos)
+	}
 }
 
 func (r *Render) renderDiagnostic(word string) {
@@ -277,7 +315,7 @@ func (r *Render) renderDiagnostic(word string) {
 		word = strings.TrimSuffix(word, " ")
 	}
 
-	r.out.SetColor(White, Red, false)
+	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
 	r.out.WriteStr(word)
 
 	if traillingWhitespace {
