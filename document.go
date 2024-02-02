@@ -93,15 +93,15 @@ func (d *Document) GetWordAfterCursor() string {
 // GetWordBeforeCursorWithSpace returns the word before the cursor.
 // Unlike GetWordBeforeCursor, it returns string containing space
 func (d *Document) GetWordBeforeCursorWithSpace() string {
-	x := d.TextBeforeCursor()
-	return x[d.FindStartOfPreviousWordWithSpace():]
+	x := []rune(d.TextBeforeCursor())
+	return string(x[d.FindStartOfPreviousWordWithSpace():])
 }
 
 // GetWordAfterCursorWithSpace returns the word after the cursor.
 // Unlike GetWordAfterCursor, it returns string containing space
 func (d *Document) GetWordAfterCursorWithSpace() string {
-	x := d.TextAfterCursor()
-	return x[:d.FindEndOfCurrentWordWithSpace()]
+	x := []rune(d.TextAfterCursor())
+	return string(x[:d.FindEndOfCurrentWordWithSpace()])
 }
 
 // GetWordBeforeCursorUntilSeparator returns the text before the cursor until next separator.
@@ -119,15 +119,15 @@ func (d *Document) GetWordAfterCursorUntilSeparator(sep string) string {
 // GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor returns the word before the cursor.
 // Unlike GetWordBeforeCursor, it returns string containing space
 func (d *Document) GetWordBeforeCursorUntilSeparatorIgnoreNextToCursor(sep string) string {
-	x := d.TextBeforeCursor()
-	return x[d.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(sep):]
+	x := []rune(d.TextBeforeCursor())
+	return string(x[d.FindStartOfPreviousWordUntilSeparatorIgnoreNextToCursor(sep):])
 }
 
 // GetWordAfterCursorUntilSeparatorIgnoreNextToCursor returns the word after the cursor.
 // Unlike GetWordAfterCursor, it returns string containing space
 func (d *Document) GetWordAfterCursorUntilSeparatorIgnoreNextToCursor(sep string) string {
-	x := d.TextAfterCursor()
-	return x[:d.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep)]
+	x := []rune(d.TextAfterCursor())
+	return string(x[:d.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(sep)])
 }
 
 // FindStartOfPreviousWord returns an index relative to the cursor position

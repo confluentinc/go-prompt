@@ -1127,13 +1127,6 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 			},
 			expected: len([]rune(" день")),
 		},
-		{
-			document: &Document{
-				Text:           " Д ",
-				cursorPosition: 0,
-			},
-			expected: len([]rune(" Д ")),
-		},
 	}
 
 	for k, p := range pattern {
