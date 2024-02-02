@@ -8,8 +8,10 @@ import (
 
 	"github.com/confluentinc/go-prompt/internal/bisect"
 	"github.com/confluentinc/go-prompt/internal/debug"
+	"github.com/confluentinc/go-prompt/internal/runes"
 	istrings "github.com/confluentinc/go-prompt/internal/strings"
 	runewidth "github.com/mattn/go-runewidth"
+	"github.com/samber/lo"
 )
 
 // Document has text displayed in terminal and cursor position.
@@ -215,14 +217,14 @@ func (d *Document) FindEndOfCurrentWord() int {
 // FindEndOfCurrentWordWithSpace is almost the same as FindEndOfCurrentWord.
 // The only difference is to ignore contiguous spaces.
 func (d *Document) FindEndOfCurrentWordWithSpace() int {
-	x := d.TextAfterCursor()
+	x := []rune(d.TextAfterCursor())
 
-	start := istrings.IndexNotByte(x, ' ')
+	start := runes.IndexOfNot(x, ' ')
 	if start == -1 {
 		return len(x)
 	}
 
-	end := strings.IndexByte(x[start:], ' ')
+	end := lo.IndexOf(x, ' ')
 	if end == -1 {
 		return len(x)
 	}
