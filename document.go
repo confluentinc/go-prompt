@@ -224,7 +224,7 @@ func (d *Document) FindEndOfCurrentWordWithSpace() int {
 		return len(x)
 	}
 
-	end := lo.IndexOf(x, ' ')
+	end := lo.IndexOf(x[start:], ' ')
 	if end == -1 {
 		return len(x)
 	}
