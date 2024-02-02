@@ -653,71 +653,85 @@ func TestDocument_FindStartOfPreviousWordWithSpace(t *testing.T) {
 		{
 			document: &Document{
 				Text:           "",
-				cursorPosition: len(""),
+				cursorPosition: len([]rune("")),
 			},
 			expected: 0,
 		},
 		{
 			document: &Document{
 				Text:           " ",
-				cursorPosition: len(" "),
+				cursorPosition: len([]rune(" ")),
 			},
 			expected: 0,
 		},
 		{
 			document: &Document{
-				Text:           "apple bana ",
-				cursorPosition: len("apple bana "),
+				Text:           "aaa aaa",
+				cursorPosition: len([]rune("aaa aaa")),
 			},
-			expected: len("apple "),
+			expected: len([]rune("aaa ")),
+		},
+		{
+			document: &Document{
+				Text:           "aaД aaД",
+				cursorPosition: len([]rune("aaД aaД")),
+			},
+			expected: len([]rune("aaД ")),
+		},
+		{
+			document: &Document{
+				Text:           "apple bana ",
+				cursorPosition: len([]rune("apple bana ")),
+			},
+			expected: len([]rune("apple ")),
 		},
 		{
 			document: &Document{
 				Text:           "apple bana\n",
-				cursorPosition: len("apple bana\n"),
+				cursorPosition: len([]rune("apple bana\n")),
 			},
-			expected: len("apple "),
+			expected: len([]rune("apple ")),
 		},
 		{
 			document: &Document{
 				Text:           "apple bana\t",
-				cursorPosition: len("apple bana\t"),
+				cursorPosition: len([]rune("apple bana\t")),
 			},
-			expected: len("apple "),
+			expected: len([]rune("apple ")),
 		},
 		{
 			document: &Document{
 				Text:           "apple bana\r",
-				cursorPosition: len("apple bana\r"),
+				cursorPosition: len([]rune("apple bana\r")),
 			},
-			expected: len("apple "),
+			expected: len([]rune("apple ")),
 		},
 		{
 			document: &Document{
 				Text:           "apple bana\f",
-				cursorPosition: len("apple bana\f"),
+				cursorPosition: len([]rune("apple bana\f")),
 			},
-			expected: len("apple "),
+			expected: len([]rune("apple ")),
 		},
 		{
 			document: &Document{
 				Text:           "apply -f /file/foo/",
-				cursorPosition: len("apply -f /file/foo/"),
+				cursorPosition: len([]rune("apply -f /file/foo/")),
 			},
-			expected: len("apply -f /file/"),
+			expected: len([]rune("apply -f /file/")),
 			sep:      " /",
 		},
 		{
 			document: &Document{
 				Text:           "apple ",
-				cursorPosition: len("apple "),
+				cursorPosition: len([]rune("apple ")),
 			},
 			expected: len(""),
 		},
 		{
 			document: &Document{
 				Text:           "file/",
-				cursorPosition: len("file/"),
+				cursorPosition: len([]rune("file/")),
 			},
 			expected: len(""),
 			sep:      " /",
@@ -727,21 +741,21 @@ func TestDocument_FindStartOfPreviousWordWithSpace(t *testing.T) {
 				Text:           "あいうえお かきくけこ ",
 				cursorPosition: 12, // cursor points to last
 			},
-			expected: len("あいうえお "), // this function returns index byte in string
+			expected: len([]rune("あいうえお ")), // this function returns index byte in string
 		},
 		{
 			document: &Document{
 				Text:           "あいうえお かきくけこ\n",
 				cursorPosition: 12, // cursor points to last
 			},
-			expected: len("あいうえお "), // this function returns index byte in string
+			expected: len([]rune("あいうえお ")), // this function returns index byte in string
 		},
 		{
 			document: &Document{
 				Text:           "Добрый день ",
 				cursorPosition: 12,
 			},
-			expected: len("Добрый "), // this function returns index byte in string
+			expected: len([]rune("Добрый ")), // this function returns index byte in stri)ng
 		},
 	}
 
@@ -1039,21 +1053,35 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 				Text:           "apple bana",
 				cursorPosition: len("apple bana"),
 			},
-			expected: len(""),
+			expected: len([]rune("")),
+		},
+		{
+			document: &Document{
+				Text:           " a",
+				cursorPosition: 0,
+			},
+			expected: len([]rune(" a")),
+		},
+		{
+			document: &Document{
+				Text:           " Д",
+				cursorPosition: 0,
+			},
+			expected: len([]rune(" Д")),
 		},
 		{
 			document: &Document{
 				Text:           "apple bana",
 				cursorPosition: len("apple "),
 			},
-			expected: len("bana"),
+			expected: len([]rune("bana")),
 		},
 		{
 			document: &Document{
 				Text:           "apply -f /file/foo.json",
 				cursorPosition: len("apply -f /"),
 			},
-			expected: len("file"),
+			expected: len([]rune("file")),
 			sep:      " /",
 		},
 		{
@@ -1061,14 +1089,14 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 				Text:           "apple bana",
 				cursorPosition: len("apple"),
 			},
-			expected: len(" bana"),
+			expected: len([]rune(" bana")),
 		},
 		{
 			document: &Document{
 				Text:           "apply -f /path/to",
 				cursorPosition: len("apply -f /path"),
 			},
-			expected: len("/to"),
+			expected: len([]rune("/to")),
 			sep:      " /",
 		},
 		{
@@ -1076,28 +1104,35 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 				Text:           "apple bana",
 				cursorPosition: len("ap"),
 			},
-			expected: len("ple"),
+			expected: len([]rune("ple")),
 		},
 		{
 			document: &Document{
 				Text:           "あいうえお かきくけこ",
 				cursorPosition: 6,
 			},
-			expected: len("かきくけこ"),
+			expected: len([]rune("かきくけこ")),
 		},
 		{
 			document: &Document{
 				Text:           "あいうえお かきくけこ",
 				cursorPosition: 5,
 			},
-			expected: len(" かきくけこ"),
+			expected: len([]rune(" かきくけこ")),
 		},
 		{
 			document: &Document{
 				Text:           "Добрый день",
 				cursorPosition: 6,
 			},
-			expected: len(" день"),
+			expected: len([]rune(" день")),
+		},
+		{
+			document: &Document{
+				Text:           " Д ",
+				cursorPosition: 0,
+			},
+			expected: len([]rune(" Д ")),
 		},
 	}
 
@@ -1105,16 +1140,16 @@ func TestDocument_FindEndOfCurrentWordWithSpace(t *testing.T) {
 		if p.sep == "" {
 			ac := p.document.FindEndOfCurrentWordWithSpace()
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d, \"%v\"] Should be %#v, got %#v", k, p.document.Text, p.expected, ac)
 			}
 			ac = p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor("")
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d, \"%v\"] Should be %#v, got %#v", k, p.document.Text, p.expected, ac)
 			}
 		} else {
 			ac := p.document.FindEndOfCurrentWordUntilSeparatorIgnoreNextToCursor(p.sep)
 			if ac != p.expected {
-				t.Errorf("[%d] Should be %#v, got %#v", k, p.expected, ac)
+				t.Errorf("[%d, \"%v\"] Should be %#v, got %#v", k, p.document.Text, p.expected, ac)
 			}
 		}
 	}

@@ -8,8 +8,10 @@ import (
 
 	"github.com/confluentinc/go-prompt/internal/bisect"
 	"github.com/confluentinc/go-prompt/internal/debug"
+	"github.com/confluentinc/go-prompt/internal/runes"
 	istrings "github.com/confluentinc/go-prompt/internal/strings"
 	runewidth "github.com/mattn/go-runewidth"
+	"github.com/samber/lo"
 )
 
 // Document has text displayed in terminal and cursor position.
@@ -153,18 +155,16 @@ func (d *Document) FindStartOfPreviousWordWithSpace() int {
 			break
 		}
 	}
-	if end == -1 {
-		return 0
+
+	for ; end >= 0; end-- {
+		char := runes[end]
+		if unicode.IsSpace(char) {
+			return end + 1
+		}
 	}
 
-	regex := regexp.MustCompile(`\s`)
-	runes = runes[:end]
-	matchPositions := regex.FindAllStringIndex(string(runes), -1)
-	if len(matchPositions) == 0 {
-		return 0
-	}
-	lastMatch := matchPositions[len(matchPositions)-1]
-	return lastMatch[0] + 1
+	return 0
+
 }
 
 // FindStartOfPreviousWordUntilSeparator is almost the same as FindStartOfPreviousWord.
@@ -215,14 +215,14 @@ func (d *Document) FindEndOfCurrentWord() int {
 // FindEndOfCurrentWordWithSpace is almost the same as FindEndOfCurrentWord.
 // The only difference is to ignore contiguous spaces.
 func (d *Document) FindEndOfCurrentWordWithSpace() int {
-	x := d.TextAfterCursor()
+	x := []rune(d.TextAfterCursor())
 
-	start := istrings.IndexNotByte(x, ' ')
+	start := runes.IndexOfNot(x, ' ')
 	if start == -1 {
 		return len(x)
 	}
 
-	end := strings.IndexByte(x[start:], ' ')
+	end := lo.IndexOf(x[start:], ' ')
 	if end == -1 {
 		return len(x)
 	}
