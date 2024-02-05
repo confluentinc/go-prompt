@@ -157,7 +157,7 @@ func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int)
 		r.out.SetColor(DefaultColor, DefaultColor, false)
 
 		r.lineWrap(cursor + width)
-		r.backward(cursor+width, width)
+		r.backward(cursor+width, width) // we go back to the same position before doing r.out.CursorDown(1) above - completions are rendered on the same pos below eacho other
 	}
 
 	if x+width >= int(r.col) {
@@ -291,9 +291,9 @@ func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, diagnostics 
 
 		r.out.WriteStr(diagnosticsText)
 		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
-	} else {
-		return r.move(cursorPos+completionLen, cursorPos)
 	}
+
+	return r.move(cursorPos+completionLen, cursorPos)
 }
 
 func (r *Render) renderDiagnostic(word string) {
