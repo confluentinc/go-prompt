@@ -125,6 +125,30 @@ func OptionSuggestionBGColor(x Color) Option {
 	}
 }
 
+// OptionDiagnosticsTextColor to change a color of text which is input by user
+func OptionDiagnosticsTextColor(x Color) Option {
+	return func(p IPrompt) error {
+		p.Renderer().diagnosticsTextColor = x
+		return nil
+	}
+}
+
+// OptionDiagnosticsBGColor to change a color of background which is input by user
+func OptionDiagnosticsBGColor(x Color) Option {
+	return func(p IPrompt) error {
+		p.Renderer().diagnosticsBGColor = x
+		return nil
+	}
+}
+
+// OptionDiagnosticsDetailsTextColor to change a color of text which is input by user
+func OptionDiagnosticsDetailsTextColor(x Color) Option {
+	return func(p IPrompt) error {
+		p.Renderer().diagnosticsDetailsTextColor = x
+		return nil
+	}
+}
+
 // OptionSelectedSuggestionTextColor to change a text color for completed text which is selected inside suggestions drop down box.
 func OptionSelectedSuggestionTextColor(x Color) Option {
 	return func(p IPrompt) error {
@@ -302,6 +326,9 @@ func New(executor Executor, completer Completer, opts ...Option) IPrompt {
 			previewSuggestionBGColor:     DefaultColor,
 			suggestionTextColor:          White,
 			suggestionBGColor:            Cyan,
+			diagnosticsTextColor:         White,
+			diagnosticsBGColor:           Red,
+			diagnosticsDetailsTextColor:  Red,
 			selectedSuggestionTextColor:  Black,
 			selectedSuggestionBGColor:    Turquoise,
 			descriptionTextColor:         Black,
