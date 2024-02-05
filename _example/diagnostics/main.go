@@ -79,11 +79,13 @@ func Lexer(line string) []prompt.LexerElement {
 func main() {
 	p := prompt.New(nil, completer,
 		prompt.OptionTitle("sql-prompt"),
+		//prompt.OptionInitialBufferText("a a a a a a a a a a "),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
 		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
+		//prompt.OptionDiagnosticsDetailsTextColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
 		prompt.OptionSetStatementTerminator(func(lastKeyStroke prompt.Key, buffer *prompt.Buffer) bool {
 			text := buffer.Text()
@@ -111,15 +113,17 @@ func main() {
 	// We highlight the first x (0-10) characters of the first line every 5 seconds
 	go func() {
 		for {
+			time.Sleep(6 * time.Second)
 			diagnostics := []lsp.Diagnostic{}
-			time.Sleep(5 * time.Second)
+
 			diagnitcsCount := rand.Intn(3) + 1
 			for i := 0; i < diagnitcsCount; i++ {
+				diagnosticPos := rand.Intn(50)
 				diagnostics = append(diagnostics,
 					lsp.Diagnostic{
 						Range: lsp.Range{
-							Start: lsp.Position{Line: 0, Character: 0},
-							End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
+							Start: lsp.Position{Line: 0, Character: diagnosticPos},
+							End:   lsp.Position{Line: 0, Character: diagnosticPos + rand.Intn(10)},
 						},
 						Severity: 1,
 						Code:     "1234",
@@ -130,8 +134,37 @@ func main() {
 			}
 
 			p.SetDiagnostics(diagnostics)
+
 		}
 	}()
+
+	/* go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			diagnostics := []lsp.Diagnostic{}
+
+			diagnitcsCount := rand.Intn(3) + 1
+			for i := 0; i < diagnitcsCount; i++ {
+				//diagnosticPos := rand.Intn(10)
+				diagnosticPos := 2
+				diagnostics = append(diagnostics,
+					lsp.Diagnostic{
+						Range: lsp.Range{
+							Start: lsp.Position{Line: 0, Character: 0},
+							End:   lsp.Position{Line: 0, Character: diagnosticPos},
+						},
+						Severity: 1,
+						Code:     "1234",
+						Source:   "mock source",
+						Message:  "Error: this is a lsp diagnostic",
+					})
+
+			}
+
+			p.SetDiagnostics(diagnostics)
+
+		}
+	}() */
 
 	p.Input()
 }
