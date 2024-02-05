@@ -3,7 +3,6 @@ package prompt
 import (
 	"fmt"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/confluentinc/go-prompt/internal/debug"
@@ -258,20 +257,18 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	return traceBackLines
 }
 
-func diagnosticsDetail(diagnostics []lsp.Diagnostic) string {
+func diagnosticsDetail(diagnostics []lsp.Diagnostic, maxCol int) string {
 	var messages []string
 
-	/* 	if len(diagnostcs) > 0 {
-		messages = append(messages, "\n ")
-	} */
 	for _, diagnostic := range diagnostics {
 		if len(diagnostic.Message) > 0 {
-			messages = append(messages, "\n"+diagnostic.Message)
-			messages = append(messages, "\n"+strconv.Itoa(diagnostic.Range.Start.Character)+":"+strconv.Itoa(diagnostic.Range.End.Character)+" "+diagnostic.Message)
+			rest := maxCol - len(diagnostic.Message)%maxCol
+			message := diagnostic.Message + strings.Repeat(" ", rest)
+			messages = append(messages, message)
 		}
 	}
 
-	return strings.Join(messages, "")
+	return "\n" + strings.Join(messages, "")
 }
 
 func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
@@ -291,7 +288,7 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 func (r *Render) renderDiagnosticsMsg(cursorPos, documentPos, completionLen int, diagnostics []lsp.Diagnostic) int {
 	if len(diagnostics) > 0 && hasDiagnostic(documentPos, diagnostics) {
 		diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
-		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1 // -1 due to the newline character
 		r.out.SetColor(White, r.diagnosticsDetailsTextColor, false)
 
 		r.out.WriteStr(diagnosticsText)
@@ -330,7 +327,6 @@ func (r *Render) renderDiagnostic(word string) {
 	}
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic, documentPos int) {
 	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
