@@ -212,7 +212,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
 	// We now need to find out where the console cursor would be if it had the same position as the buffer cursor.
-	translatedBufferCursorPos := r.getCursorEndPos(prefix+line[:buffer.Document().cursorPosition], 0)
+	translatedBufferCursorPos := r.getCursorEndPos(prefix+buffer.Document().TextBeforeCursor(), 0)
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
 
 	// If suggestion is select for preview
