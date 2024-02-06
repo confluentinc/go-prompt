@@ -34,6 +34,7 @@ type Render struct {
 	diagnosticsTextColor         Color
 	diagnosticsBGColor           Color
 	diagnosticsDetailsTextColor  Color
+	diagnosticsDetailsBGColor    Color
 	selectedSuggestionTextColor  Color
 	selectedSuggestionBGColor    Color
 	descriptionTextColor         Color
@@ -288,8 +289,8 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 func (r *Render) renderDiagnosticsMsg(cursorPos, documentPos, completionLen int, diagnostics []lsp.Diagnostic) int {
 	if len(diagnostics) > 0 && hasDiagnostic(documentPos, diagnostics) {
 		diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
-		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1 // -1 due to the newline character
-		r.out.SetColor(White, r.diagnosticsDetailsTextColor, false)
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1 // This is a trick due to the fact the the terminal cursor is lazy and will only create a new line if you write something. So even though we filled the whole line with empty spaces if the diagnostics is shorter that the column, at the last line, the cursor won't automatically jump to the next line. We adjust the cursor position doing -1 because that's the actual position.
+		r.out.SetColor(White, r.diagnosticsDetailsBGColor, false)
 
 		r.out.WriteStr(diagnosticsText)
 		r.out.SetColor(White, DefaultColor, false)

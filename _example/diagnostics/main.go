@@ -79,13 +79,14 @@ func Lexer(line string) []prompt.LexerElement {
 func main() {
 	p := prompt.New(nil, completer,
 		prompt.OptionTitle("sql-prompt"),
-		//prompt.OptionInitialBufferText("a a a a a a a a a a "),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
 		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
+		prompt.OptionDiagnosticsDetailsBGColor(prompt.Red),
+		prompt.OptionDiagnosticsDetailsTextColor(prompt.White),
 		prompt.OptionSetStatementTerminator(func(lastKeyStroke prompt.Key, buffer *prompt.Buffer) bool {
 			text := buffer.Text()
 			text = strings.TrimSpace(text)
