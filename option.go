@@ -37,7 +37,7 @@ func OptionPrefix(x string) Option {
 	}
 }
 
-// OptionInitialBufferText to set the initial buffer text
+// OptionInitialBufferText to set the initial buffer text.
 func OptionInitialBufferText(x string) Option {
 	return func(p IPrompt) error {
 		p.Buffer().InsertText(x, false, true)
@@ -53,7 +53,7 @@ func OptionCompletionWordSeparator(x string) Option {
 	}
 }
 
-// OptionLivePrefix to change the prefix dynamically by callback function
+// OptionLivePrefix to change the prefix dynamically by callback function.
 func OptionLivePrefix(f func() (prefix string, useLivePrefix bool)) Option {
 	return func(p IPrompt) error {
 		p.Renderer().livePrefixCallback = f
@@ -61,7 +61,7 @@ func OptionLivePrefix(f func() (prefix string, useLivePrefix bool)) Option {
 	}
 }
 
-// OptionPrefixTextColor change a text color of prefix string
+// OptionPrefixTextColor change a text color of prefix string.
 func OptionPrefixTextColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().prefixTextColor = x
@@ -69,7 +69,7 @@ func OptionPrefixTextColor(x Color) Option {
 	}
 }
 
-// OptionPrefixBackgroundColor to change a background color of prefix string
+// OptionPrefixBackgroundColor to change a background color of prefix string.
 func OptionPrefixBackgroundColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().prefixBGColor = x
@@ -77,7 +77,7 @@ func OptionPrefixBackgroundColor(x Color) Option {
 	}
 }
 
-// OptionInputTextColor to change a color of text which is input by user
+// OptionInputTextColor to change a color of text which is input by user.
 func OptionInputTextColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().inputTextColor = x
@@ -85,7 +85,7 @@ func OptionInputTextColor(x Color) Option {
 	}
 }
 
-// OptionInputBGColor to change a color of background which is input by user
+// OptionInputBGColor to change a color of background which is input by user.
 func OptionInputBGColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().inputBGColor = x
@@ -93,7 +93,7 @@ func OptionInputBGColor(x Color) Option {
 	}
 }
 
-// OptionPreviewSuggestionTextColor to change a text color which is completed
+// OptionPreviewSuggestionTextColor to change a text color which is completed.
 func OptionPreviewSuggestionTextColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().previewSuggestionTextColor = x
@@ -101,7 +101,7 @@ func OptionPreviewSuggestionTextColor(x Color) Option {
 	}
 }
 
-// OptionPreviewSuggestionBGColor to change a background color which is completed
+// OptionPreviewSuggestionBGColor to change a background color which is completed.
 func OptionPreviewSuggestionBGColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().previewSuggestionBGColor = x
@@ -125,7 +125,7 @@ func OptionSuggestionBGColor(x Color) Option {
 	}
 }
 
-// OptionDiagnosticsTextColor to change a color of text which is input by user
+// OptionDiagnosticsTextColor to change a color of text which is input by user.
 func OptionDiagnosticsTextColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().diagnosticsTextColor = x
@@ -133,7 +133,7 @@ func OptionDiagnosticsTextColor(x Color) Option {
 	}
 }
 
-// OptionDiagnosticsBGColor to change a color of background which is input by user
+// OptionDiagnosticsBGColor to change the color used to highlight the range returned in the diagnostics.
 func OptionDiagnosticsBGColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().diagnosticsBGColor = x
@@ -141,10 +141,18 @@ func OptionDiagnosticsBGColor(x Color) Option {
 	}
 }
 
-// OptionDiagnosticsDetailsTextColor to change a color of text which is input by user
+// OptionDiagnosticsDetailsTextColor to change a color of text of the diagnostic details shown at the bottom.
 func OptionDiagnosticsDetailsTextColor(x Color) Option {
 	return func(p IPrompt) error {
 		p.Renderer().diagnosticsDetailsTextColor = x
+		return nil
+	}
+}
+
+// OptionDiagnosticsDetailsTextColor to change a color of text of the diagnostic details shown at the bottom.
+func OptionDiagnosticsDetailsBGColor(x Color) Option {
+	return func(p IPrompt) error {
+		p.Renderer().diagnosticsDetailsBGColor = x
 		return nil
 	}
 }
@@ -274,7 +282,7 @@ func OptionShowCompletionAtStart() Option {
 	}
 }
 
-// OptionBreakLineCallback to run a callback at every break line
+// OptionBreakLineCallback to run a callback at every break line.
 func OptionBreakLineCallback(fn func(*Document)) Option {
 	return func(p IPrompt) error {
 		p.Renderer().breakLineCallback = fn
@@ -282,7 +290,7 @@ func OptionBreakLineCallback(fn func(*Document)) Option {
 	}
 }
 
-// OptionSetExitCheckerOnInput set an exit function which checks if go-prompt exits its Run loop
+// OptionSetExitCheckerOnInput set an exit function which checks if go-prompt exits its Run loop.
 func OptionSetExitCheckerOnInput(fn ExitChecker) Option {
 	return func(p IPrompt) error {
 		p.SetExitChecker(fn)
@@ -299,7 +307,7 @@ func OptionSetLexer(fn LexerFunc) Option {
 }
 
 // OptionSetStatementTerminator allows you to configure a callback that tells you if statement
-// has been terminated and ready to pass to exec in a (potentially) multiline buffer
+// has been terminated and ready to pass to exec in a (potentially) multiline buffer.
 func OptionSetStatementTerminator(fn StatementTerminatorCb) Option {
 	return func(p IPrompt) error {
 		p.SetStatementTerminatorCb(fn)
