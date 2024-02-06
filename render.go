@@ -34,6 +34,7 @@ type Render struct {
 	diagnosticsTextColor         Color
 	diagnosticsBGColor           Color
 	diagnosticsDetailsTextColor  Color
+	diagnosticsDetailsBGColor    Color
 	selectedSuggestionTextColor  Color
 	selectedSuggestionBGColor    Color
 	descriptionTextColor         Color
@@ -207,7 +208,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	// if diagnostics is on, we have to redefine lexer here
-	r.renderLine(line, lexer, diagnostics)
+	r.renderLine(line, lexer, diagnostics, buffer.Document().cursorPosition)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
@@ -250,23 +251,25 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
 	completionLen := r.renderCompletion(completion, cursorPos)
 
-	// Render dianostics messages - showing error detail at the bottom of the screen
-	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen, diagnostics)
+	// Render dianostics messages - showing error detail at the bottom of the screen.
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, buffer.Document().cursorPosition, completionLen, diagnostics)
 
 	r.previousCursor = cursorPos
 	return traceBackLines
 }
 
-func diagnosticsDetail(diagnostics []lsp.Diagnostic) string {
+func diagnosticsDetail(diagnostics []lsp.Diagnostic, maxCol int) string {
 	var messages []string
 
 	for _, diagnostic := range diagnostics {
 		if len(diagnostic.Message) > 0 {
-			messages = append(messages, "\n"+diagnostic.Message)
+			rest := maxCol - len(diagnostic.Message)%maxCol
+			message := diagnostic.Message + strings.Repeat(" ", rest)
+			messages = append(messages, message)
 		}
 	}
 
-	return strings.Join(messages, "")
+	return "\n" + strings.Join(messages, "")
 }
 
 func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
@@ -283,13 +286,17 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 }
 
 // Render diagnostics and returns the length that the cursor has to be moved back
-func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, diagnostics []lsp.Diagnostic) int {
-	if len(diagnostics) > 0 {
-		diagnosticsText := diagnosticsDetail(diagnostics)
-		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos)
-		r.out.SetColor(r.diagnosticsDetailsTextColor, DefaultColor, false)
+func (r *Render) renderDiagnosticsMsg(cursorPos, documentPos, completionLen int, diagnostics []lsp.Diagnostic) int {
+	if len(diagnostics) > 0 && hasDiagnostic(documentPos, diagnostics) {
+		diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
+		// Why we do -1 here: This is a trick due to the fact the the terminal cursor is lazy and will only create a new line if you write something.
+		// So even though we filled the whole line with empty spaces, at the last line, the cursor won't automatically jump to the next line.
+		// We adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
+		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1
+		r.out.SetColor(White, r.diagnosticsDetailsBGColor, false)
 
 		r.out.WriteStr(diagnosticsText)
+		r.out.SetColor(White, DefaultColor, false)
 		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
 	}
 
@@ -324,7 +331,7 @@ func (r *Render) renderDiagnostic(word string) {
 	}
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
+func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic, documentPos int) {
 	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
@@ -333,8 +340,6 @@ func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnos
 			a := strings.SplitAfter(s, v.Text)
 			s = strings.TrimPrefix(s, a[0])
 
-			pos += len(a[0])
-
 			if hasDiagnostic(pos, diagnostics) {
 				r.renderDiagnostic(a[0])
 			} else {
@@ -342,6 +347,7 @@ func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnos
 				r.out.WriteStr(a[0])
 			}
 
+			pos += len(a[0])
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
