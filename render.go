@@ -287,7 +287,7 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 
 // Render diagnostics and returns the length that the cursor has to be moved back
 func (r *Render) renderDiagnosticsMsg(cursorPos, documentPos, completionLen int, diagnostics []lsp.Diagnostic) int {
-	if len(diagnostics) > 0 && hasDiagnostic(documentPos, diagnostics) {
+	if hasDiagnostic(documentPos, diagnostics) {
 		diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
 		// Why we do -1 here: This is a trick due to the fact the the terminal cursor is lazy and will only create a new line if you write something.
 		// So even though we filled the whole line with empty spaces, at the last line, the cursor won't automatically jump to the next line.
