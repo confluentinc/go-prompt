@@ -331,7 +331,7 @@ func (r *Render) renderDiagnostic(word string) {
 	}
 }
 
-func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic, documentPos int) {
+func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
 	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
