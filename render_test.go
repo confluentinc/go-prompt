@@ -209,6 +209,9 @@ func TestGetCursorEndPosition(t *testing.T) {
 		{text: "abcd", startPos: 0, expectedCursorEndPos: 4},
 		{text: "abcde", startPos: 0, expectedCursorEndPos: 5},
 		{text: "abc\n", startPos: 0, expectedCursorEndPos: 5},
+		{text: "\nabc", startPos: 0, expectedCursorEndPos: 8},
+		{text: "\nabcde", startPos: 0, expectedCursorEndPos: 10},
+		{text: "\nabcdeabcde", startPos: 0, expectedCursorEndPos: 15},
 		{text: "abc\n\n", startPos: 0, expectedCursorEndPos: 10},
 		{text: "abc\nd", startPos: 0, expectedCursorEndPos: 6},
 		{text: "ab\nc", startPos: 0, expectedCursorEndPos: 6},
@@ -234,8 +237,8 @@ func TestDiagnosticsDetail(t *testing.T) {
 		{Message: "Error 3"},
 	}
 
-	expected := "\nError 1\nError 2\nError 3"
-	actual := diagnosticsDetail(diagnostics)
+	expected := "\nError 1   Error 2   Error 3   "
+	actual := diagnosticsDetail(diagnostics, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with a single diagnostic
@@ -243,15 +246,15 @@ func TestDiagnosticsDetail(t *testing.T) {
 		{Message: "Single Error"},
 	}
 
-	expected = "\nSingle Error"
-	actual = diagnosticsDetail(diagnostics)
+	expected = "\nSingle Error        "
+	actual = diagnosticsDetail(diagnostics, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with no diagnostics
 	diagnostics = []lsp.Diagnostic{}
 
-	expected = ""
-	actual = diagnosticsDetail(diagnostics)
+	expected = "\n"
+	actual = diagnosticsDetail(diagnostics, 10)
 	require.Equal(t, expected, actual)
 
 	require.Equal(t, expected, actual)
