@@ -85,6 +85,8 @@ func main() {
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
+		prompt.OptionDiagnosticsDetailsBGColor(prompt.Red),
+		prompt.OptionDiagnosticsDetailsTextColor(prompt.White),
 		prompt.OptionSetStatementTerminator(func(lastKeyStroke prompt.Key, buffer *prompt.Buffer) bool {
 			text := buffer.Text()
 			text = strings.TrimSpace(text)
@@ -108,28 +110,30 @@ func main() {
 
 	p.SetDiagnostics([]lsp.Diagnostic{mockDiagnostic})
 
-	// We highlight the first x (0-10) characters of the first line every 5 seconds
 	go func() {
 		for {
-			diagnostics := []lsp.Diagnostic{}
 			time.Sleep(5 * time.Second)
-			diagnitcsCount := rand.Intn(3) + 1
-			for i := 0; i < diagnitcsCount; i++ {
+			diagnostics := []lsp.Diagnostic{}
+
+			diagnosticsCount := rand.Intn(3) + 1
+			for i := 0; i < diagnosticsCount; i++ {
+				diagnosticPos := rand.Intn(10)
+
 				diagnostics = append(diagnostics,
 					lsp.Diagnostic{
 						Range: lsp.Range{
-							Start: lsp.Position{Line: 0, Character: 0},
-							End:   lsp.Position{Line: 0, Character: rand.Intn(10)},
+							Start: lsp.Position{Line: 0, Character: diagnosticPos},
+							End:   lsp.Position{Line: 0, Character: diagnosticPos + 3},
 						},
 						Severity: 1,
 						Code:     "1234",
 						Source:   "mock source",
 						Message:  "Error: this is a lsp diagnostic",
 					})
-				mockDiagnostic.Range.End.Character = i
 			}
 
 			p.SetDiagnostics(diagnostics)
+
 		}
 	}()
 
