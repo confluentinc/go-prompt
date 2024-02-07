@@ -208,7 +208,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	r.renderPrefix()
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 	// if diagnostics is on, we have to redefine lexer here
-	r.renderLine(line, lexer, diagnostics, buffer.Document().cursorPosition)
+	r.renderLine(line, lexer, diagnostics)
 	r.out.SetColor(DefaultColor, DefaultColor, false)
 
 	// At this point the rendering is done and the cursor has moved to its end position we calculated earlier.
