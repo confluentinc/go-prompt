@@ -316,12 +316,16 @@ func OptionSetStatementTerminator(fn StatementTerminatorCb) Option {
 }
 
 // New returns a Prompt with powerful auto-completion.
-func New(executor Executor, completer Completer, opts ...Option) IPrompt {
+func New(executor Executor, completer Completer, opts ...Option) (IPrompt, error) {
 	defaultWriter := NewStdoutWriter()
 	registerConsoleWriter(defaultWriter)
 
+	standardInputParser, err := NewStandardInputParser()
+	if err != nil {
+		return nil, err
+	}
 	pt := &Prompt{
-		in: NewStandardInputParser(),
+		in: standardInputParser,
 		renderer: &Render{
 			prefix:                       "> ",
 			out:                          defaultWriter,
@@ -363,8 +367,8 @@ func New(executor Executor, completer Completer, opts ...Option) IPrompt {
 
 	for _, opt := range opts {
 		if err := opt(pt); err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
-	return pt
+	return pt, nil
 }
