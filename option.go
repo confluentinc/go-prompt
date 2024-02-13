@@ -320,8 +320,12 @@ func New(executor Executor, completer Completer, opts ...Option) IPrompt {
 	defaultWriter := NewStdoutWriter()
 	registerConsoleWriter(defaultWriter)
 
+	standardInputParser, err := NewStandardInputParser()
+	if err != nil {
+		return &Prompt{}
+	}
 	pt := &Prompt{
-		in: NewStandardInputParser(),
+		in: standardInputParser,
 		renderer: &Render{
 			prefix:                       "> ",
 			out:                          defaultWriter,
