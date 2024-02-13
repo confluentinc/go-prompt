@@ -77,7 +77,7 @@ func Lexer(line string) []prompt.LexerElement {
 }
 
 func main() {
-	p := prompt.New(nil, completer,
+	p, _ := prompt.New(nil, completer,
 		prompt.OptionTitle("sql-prompt"),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
 		prompt.OptionPrefixTextColor(prompt.Yellow),

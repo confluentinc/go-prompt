@@ -181,7 +181,7 @@ func main() {
 		client: &http.Client{},
 	}
 
-	p := prompt.New(
+	p, _ := prompt.New(
 		executor,
 		completer,
 		prompt.OptionPrefix(u.String()+"> "),

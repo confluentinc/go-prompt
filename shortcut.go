@@ -4,13 +4,17 @@ func dummyExecutor(in string) {}
 
 // Input get the input data from the user and return it.
 func Input(prefix string, completer Completer, opts ...Option) string {
-	pt := New(dummyExecutor, completer)
+	pt, err := New(dummyExecutor, completer)
+	if err != nil {
+		return ""
+	}
+
 	pt.Renderer().prefixTextColor = DefaultColor
 	pt.Renderer().prefix = prefix
 
 	for _, opt := range opts {
 		if err := opt(pt); err != nil {
-			panic(err)
+			return ""
 		}
 	}
 	return pt.Input()
@@ -20,7 +24,10 @@ func Input(prefix string, completer Completer, opts ...Option) string {
 // Deprecated: Maybe anyone want to use this.
 func Choose(prefix string, choices []string, opts ...Option) string {
 	completer := newChoiceCompleter(choices, FilterHasPrefix)
-	pt := New(dummyExecutor, completer)
+	pt, err := New(dummyExecutor, completer)
+	if err != nil {
+		return ""
+	}
 	pt.Renderer().prefixTextColor = DefaultColor
 	pt.Renderer().prefix = prefix
 
