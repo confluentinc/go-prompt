@@ -21,7 +21,7 @@ func completer(in prompt.Document) []prompt.Suggest {
 }
 
 func main() {
-	p := prompt.New(
+	p, _ := prompt.New(
 		executor,
 		completer,
 		prompt.OptionPrefix(">>> "),

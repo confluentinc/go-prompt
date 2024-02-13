@@ -25,7 +25,7 @@ func completer(t prompt.Document) []prompt.Suggest {
 }
 
 func main() {
-	p := prompt.New(
+	p, _ := prompt.New(
 		executor,
 		completer,
 	)
