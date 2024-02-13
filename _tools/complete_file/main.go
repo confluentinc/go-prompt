@@ -33,7 +33,7 @@ func completerFunc(d prompt.Document) []prompt.Suggest {
 }
 
 func main() {
-	p := prompt.New(
+	p, _ := prompt.New(
 		executor,
 		completerFunc,
 		prompt.OptionPrefix(">>> "),
