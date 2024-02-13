@@ -64,13 +64,13 @@ func (t *PosixParser) GetWinSize() *WinSize {
 var _ ConsoleParser = &PosixParser{}
 
 // NewStandardInputParser returns ConsoleParser object to read from stdin.
-func NewStandardInputParser() *PosixParser {
+func NewStandardInputParser() (*PosixParser, error) {
 	in, err := syscall.Open("/dev/tty", syscall.O_RDONLY, 0)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &PosixParser{
 		fd: in,
-	}
+	}, nil
 }
