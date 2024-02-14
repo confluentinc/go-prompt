@@ -78,6 +78,6 @@ func (p *WindowsParser) GetWinSize() *WinSize {
 }
 
 // NewStandardInputParser returns ConsoleParser object to read from stdin.
-func NewStandardInputParser() *WindowsParser {
-	return &WindowsParser{}
+func NewStandardInputParser() (*WindowsParser, error) {
+	return &WindowsParser{}, nil
 }

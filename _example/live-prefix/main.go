@@ -37,7 +37,7 @@ func changeLivePrefix() (string, bool) {
 }
 
 func main() {
-	p := prompt.New(
+	p, _ := prompt.New(
 		executor,
 		completer,
 		prompt.OptionPrefix(">>> "),
