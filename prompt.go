@@ -329,8 +329,11 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 				// move the cursor up by one line
 				p.buf.CursorDown(1)
 			} else if newBuf, changed := p.history.Newer(p.buf); changed {
+
 				p.prevText = p.buf.Text()
 				p.buf = newBuf
+			} else {
+
 			}
 			return
 		}
@@ -354,9 +357,10 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 }
 
 func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
+
 	switch key {
 	case Down:
-		if completing || p.completionOnDown {
+		if completing || (p.completionOnDown && !p.history.HasNewer()) {
 			p.completion.Next()
 		}
 	case Tab, ControlI:
