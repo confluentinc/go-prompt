@@ -332,8 +332,6 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 
 				p.prevText = p.buf.Text()
 				p.buf = newBuf
-			} else {
-
 			}
 			return
 		}
