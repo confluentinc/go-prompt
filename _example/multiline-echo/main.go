@@ -21,6 +21,7 @@ func main() {
 	in := prompt.Input(">>> ", completer,
 		prompt.OptionTitle("sql-prompt"),
 		prompt.OptionHistory([]string{"SELECT * FROM users;"}),
+		prompt.OptionCompletionOnDown(),
 		prompt.OptionPrefixTextColor(prompt.Yellow),
 		prompt.OptionPreviewSuggestionTextColor(prompt.Blue),
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
