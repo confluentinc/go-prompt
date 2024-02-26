@@ -65,6 +65,19 @@ blocks:
         always:
           commands:
             - test-results publish . -N "windows/amd64"
+                
+  - name: "Release API"
+    dependencies:
+      - linux/amd64
+      - darwin/arm64
+      - windows/amd64
+    run:
+      when: 'branch =~ ''^(master|v[0-9]+\.[0-9]+\.x(-[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT)?)$'' and change_in(''/'', {exclude: [''/.deployed-versions/'', ''.github/'']})'
+    task:
+      jobs:
+        - name: "Release API"
+          commands:
+            - make release-ci
 
 after_pipeline:
   task:
