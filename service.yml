@@ -11,7 +11,3 @@ gitignore:
 semaphore:
   enable: true
   pipeline_enable: false
-make:
-  enable: true
-  enable_updates: true
-  update_makefile: false
