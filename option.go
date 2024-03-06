@@ -1,5 +1,11 @@
 package prompt
 
+import (
+	"os"
+)
+
+const EnvVarInputFile = "GO_PROMPT_INPUT_FILE"
+
 // Option is the type to replace default parameters.
 // prompt.New accepts any number of options (this is functional option pattern).
 type Option func(prompt IPrompt) error
@@ -320,12 +326,12 @@ func New(executor Executor, completer Completer, opts ...Option) (IPrompt, error
 	defaultWriter := NewStdoutWriter()
 	registerConsoleWriter(defaultWriter)
 
-	standardInputParser, err := NewStandardInputParser()
+	inputParser, err := getInputParser()
 	if err != nil {
 		return nil, err
 	}
 	pt := &Prompt{
-		in: standardInputParser,
+		in: inputParser,
 		renderer: &Render{
 			prefix:                       "> ",
 			out:                          defaultWriter,
@@ -371,4 +377,12 @@ func New(executor Executor, completer Completer, opts ...Option) (IPrompt, error
 		}
 	}
 	return pt, nil
+}
+
+func getInputParser() (ConsoleParser, error) {
+	// if the env var is set, we use the provided file as the input stream
+	if inputFile := os.Getenv(EnvVarInputFile); inputFile != "" {
+		return NewFileInputParser(inputFile), nil
+	}
+	return NewStandardInputParser()
 }
