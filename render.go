@@ -308,27 +308,9 @@ func (r *Render) renderDiagnostic(word string) {
 		return
 	}
 
-	// Is first char whitespace
-	if strings.HasPrefix(word, " ") {
-		r.out.SetColor(DefaultColor, r.inputBGColor, false)
-		r.out.WriteStr(" ")
-		word = strings.TrimPrefix(word, " ")
-	}
-
-	// Is last char whitespace
-	traillingWhitespace := false
-	if len(word) > 1 && strings.HasSuffix(word, " ") {
-		traillingWhitespace = true
-		word = strings.TrimSuffix(word, " ")
-	}
-
 	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
 	r.out.WriteStr(word)
 
-	if traillingWhitespace {
-		r.out.SetColor(DefaultColor, r.inputBGColor, false)
-		r.out.WriteStr(" ")
-	}
 }
 
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
