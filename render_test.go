@@ -277,18 +277,36 @@ func TestHasDiagnostic(t *testing.T) {
 	}
 
 	// Test within range
-	require.True(t, hasDiagnostic(5, diagnostics))
-	require.True(t, hasDiagnostic(25, diagnostics))
+	require.True(t, hasDiagnostic(0, 5, diagnostics))
+	require.True(t, hasDiagnostic(0, 25, diagnostics))
 
 	// Test on the boundaries
-	require.True(t, hasDiagnostic(0, diagnostics))
-	require.True(t, hasDiagnostic(10, diagnostics))
-	require.True(t, hasDiagnostic(20, diagnostics))
-	require.True(t, hasDiagnostic(30, diagnostics))
+	require.True(t, hasDiagnostic(0, 0, diagnostics))
+	require.True(t, hasDiagnostic(0, 10, diagnostics))
+	require.True(t, hasDiagnostic(0, 20, diagnostics))
+	require.True(t, hasDiagnostic(0, 30, diagnostics))
 
 	// Test outside of range
-	require.False(t, hasDiagnostic(-1, diagnostics))
-	require.False(t, hasDiagnostic(11, diagnostics))
-	require.False(t, hasDiagnostic(19, diagnostics))
-	require.False(t, hasDiagnostic(31, diagnostics))
+	require.False(t, hasDiagnostic(0, -1, diagnostics))
+	require.False(t, hasDiagnostic(0, 11, diagnostics))
+	require.False(t, hasDiagnostic(0, 19, diagnostics))
+	require.False(t, hasDiagnostic(0, 31, diagnostics))
+
+	// Test for different line (1)
+	// Test within range
+	require.False(t, hasDiagnostic(1, 5, diagnostics))
+	require.False(t, hasDiagnostic(1, 25, diagnostics))
+
+	// Test on the boundaries
+	require.False(t, hasDiagnostic(1, 0, diagnostics))
+	require.False(t, hasDiagnostic(1, 10, diagnostics))
+	require.False(t, hasDiagnostic(1, 20, diagnostics))
+	require.False(t, hasDiagnostic(1, 30, diagnostics))
+
+	// Test outside of range
+	require.False(t, hasDiagnostic(1, -1, diagnostics))
+	require.False(t, hasDiagnostic(1, 11, diagnostics))
+	require.False(t, hasDiagnostic(1, 19, diagnostics))
+	require.False(t, hasDiagnostic(1, 31, diagnostics))
+
 }
