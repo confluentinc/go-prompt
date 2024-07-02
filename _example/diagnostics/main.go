@@ -31,6 +31,11 @@ var specialSplitTokens = map[int32]uint8{
 	'<':  1,
 	'>':  1,
 	',':  1,
+	'.':  1,
+	'(':  1,
+	')':  1,
+	'[':  1,
+	']':  1,
 }
 
 func splitWithSeparators(line string) []string {
