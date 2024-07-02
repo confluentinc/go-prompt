@@ -250,10 +250,30 @@ func TestDiagnosticsDetail(t *testing.T) {
 	actual = diagnosticsDetail(diagnostics, 10)
 	require.Equal(t, expected, actual)
 
+	// Test with multiple diagnostics with multiline messages
+	diagnostics = []lsp.Diagnostic{
+		{Message: "Error 1\nNextline"},
+		{Message: "Error 2\nNextline"},
+		{Message: "Error 3\nNextline"},
+	}
+
+	expected = "\nError 1   Nextline  Error 2   Nextline  Error 3   Nextline  "
+	actual = diagnosticsDetail(diagnostics, 10)
+	require.Equal(t, expected, actual)
+
+	// Test with a single diagnostic  with multiline messages
+	diagnostics = []lsp.Diagnostic{
+		{Message: "A long error\nNextline"},
+	}
+
+	expected = "\nA long error        Nextline  " // Here the first error overflow the column width (12 chars and 10 columns)
+	actual = diagnosticsDetail(diagnostics, 10)
+	require.Equal(t, expected, actual)
+
 	// Test with no diagnostics
 	diagnostics = []lsp.Diagnostic{}
 
-	expected = "\n"
+	expected = ""
 	actual = diagnosticsDetail(diagnostics, 10)
 	require.Equal(t, expected, actual)
 
