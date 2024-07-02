@@ -1387,10 +1387,7 @@ func TestCharColumnWidth(t *testing.T) {
 	}
 
 	for _, test := range countCharTests {
-		ac := runewidth.StringWidth(test.text)
-		if ac != test.expectedCount {
-			t.Errorf("Should be %#v, got %#v", test.expectedCount, ac)
-		}
+		require.Equal(t, test.expectedCount, runewidth.StringWidth(test.text))
 	}
 
 }
