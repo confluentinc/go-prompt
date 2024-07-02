@@ -263,13 +263,20 @@ func diagnosticsDetail(diagnostics []lsp.Diagnostic, maxCol int) string {
 
 	for _, diagnostic := range diagnostics {
 		if len(diagnostic.Message) > 0 {
-			rest := maxCol - len(diagnostic.Message)%maxCol
-			message := diagnostic.Message + strings.Repeat(" ", rest)
-			messages = append(messages, message)
+			lines := strings.Split(diagnostic.Message, "\n")
+			for _, line := range lines {
+				rest := maxCol - runewidth.StringWidth(line)%maxCol // we use string width here because we need to know the width of the string, characters can have different widths in the terminal (e.g. a, け, あ)
+				lineWithBackground := line + strings.Repeat(" ", rest)
+				messages = append(messages, lineWithBackground)
+			}
 		}
 	}
 
-	return "\n" + strings.Join(messages, "")
+	if len(messages) > 0 {
+		return "\n" + strings.Join(messages, "")
+	}
+
+	return ""
 }
 
 func hasDiagnostic(line, col int, diagnostics []lsp.Diagnostic) bool {
@@ -291,9 +298,9 @@ func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, document *Do
 	if document != nil && document.Text != "" {
 		if line, col := document.TranslateIndexToPosition(document.cursorPosition); hasDiagnostic(line, col, diagnostics) {
 			diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
-			// Why we do -1 here: This is a trick due to the fact the the terminal cursor is lazy and will only create a new line if you write something.
-			// So even though we filled the whole line with empty spaces, at the last line, the cursor won't automatically jump to the next line.
-			// We adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
+			// Why we do -1 here: We currently fill each new diagnostic line with empty spaces to create the colored background.
+			// However, the terminal is lazy and will not move the cursor to the next position/line (which would create a new line).
+			// Because of that, we adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
 			cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1
 			r.out.SetColor(White, r.diagnosticsDetailsBGColor, false)
 
