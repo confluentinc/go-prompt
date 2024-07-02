@@ -6,6 +6,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	runewidth "github.com/mattn/go-runewidth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1371,4 +1372,22 @@ func TestDocument_GetEndOfLinePosition(t *testing.T) {
 	if ac != ex {
 		t.Errorf("Should be %#v, got %#v", ex, ac)
 	}
+}
+
+func TestCharColumnWidth(t *testing.T) {
+	var countCharTests = []struct {
+		text          string
+		expectedCount int
+	}{
+		{"", 0},
+		{"a", 1},
+		{"あ", 2},
+		{"け", 2},
+		{"く", 2},
+	}
+
+	for _, test := range countCharTests {
+		require.Equal(t, test.expectedCount, runewidth.StringWidth(test.text))
+	}
+
 }
