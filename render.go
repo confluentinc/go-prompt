@@ -252,7 +252,7 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	completionLen := r.renderCompletion(completion, cursorPos)
 
 	// Render dianostics messages - showing error detail at the bottom of the screen.
-	cursorPos = r.renderDiagnosticsMsg(cursorPos, buffer.Document().cursorPosition, completionLen, diagnostics)
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen, buffer.Document(), diagnostics)
 
 	r.previousCursor = cursorPos
 	return traceBackLines
@@ -263,21 +263,29 @@ func diagnosticsDetail(diagnostics []lsp.Diagnostic, maxCol int) string {
 
 	for _, diagnostic := range diagnostics {
 		if len(diagnostic.Message) > 0 {
-			rest := maxCol - len(diagnostic.Message)%maxCol
-			message := diagnostic.Message + strings.Repeat(" ", rest)
-			messages = append(messages, message)
+			lines := strings.Split(diagnostic.Message, "\n")
+			for _, line := range lines {
+				rest := maxCol - runewidth.StringWidth(line)%maxCol // we use string width here because we need to know the width of the string, characters can have different widths in the terminal (e.g. a, け, あ)
+				lineWithBackground := line + strings.Repeat(" ", rest)
+				messages = append(messages, lineWithBackground)
+			}
 		}
 	}
 
-	return "\n" + strings.Join(messages, "")
+	if len(messages) > 0 {
+		return "\n" + strings.Join(messages, "")
+	}
+
+	return ""
 }
 
-func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
+func hasDiagnostic(line, col int, diagnostics []lsp.Diagnostic) bool {
 	for _, diagnostic := range diagnostics {
+		diagnosticLine := diagnostic.Range.Start.Line
 		start := diagnostic.Range.Start.Character
 		end := diagnostic.Range.End.Character
 
-		if pos >= start && pos <= end {
+		if line == diagnosticLine && col >= start && col <= end {
 			return true
 		}
 	}
@@ -286,18 +294,20 @@ func hasDiagnostic(pos int, diagnostics []lsp.Diagnostic) bool {
 }
 
 // Render diagnostics and returns the length that the cursor has to be moved back
-func (r *Render) renderDiagnosticsMsg(cursorPos, documentPos, completionLen int, diagnostics []lsp.Diagnostic) int {
-	if hasDiagnostic(documentPos, diagnostics) {
-		diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
-		// Why we do -1 here: This is a trick due to the fact the the terminal cursor is lazy and will only create a new line if you write something.
-		// So even though we filled the whole line with empty spaces, at the last line, the cursor won't automatically jump to the next line.
-		// We adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
-		cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1
-		r.out.SetColor(White, r.diagnosticsDetailsBGColor, false)
+func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, document *Document, diagnostics []lsp.Diagnostic) int {
+	if document != nil && document.Text != "" {
+		if line, col := document.TranslateIndexToPosition(document.cursorPosition); hasDiagnostic(line, col, diagnostics) {
+			diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
+			// Why we do -1 here: We currently fill each new diagnostic line with empty spaces to create the colored background.
+			// However, the terminal is lazy and will not move the cursor to the next position/line (which would create a new line).
+			// Because of that, we adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
+			cursorEndPosWithInsertedDiagnostics := r.getCursorEndPos(diagnosticsText, cursorPos) - 1
+			r.out.SetColor(White, r.diagnosticsDetailsBGColor, false)
 
-		r.out.WriteStr(diagnosticsText)
-		r.out.SetColor(White, DefaultColor, false)
-		return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
+			r.out.WriteStr(diagnosticsText)
+			r.out.SetColor(White, DefaultColor, false)
+			return r.move(cursorEndPosWithInsertedDiagnostics+completionLen, cursorPos)
+		}
 	}
 
 	return r.move(cursorPos+completionLen, cursorPos)
@@ -308,46 +318,35 @@ func (r *Render) renderDiagnostic(word string) {
 		return
 	}
 
-	// Is first char whitespace
-	if strings.HasPrefix(word, " ") {
-		r.out.SetColor(DefaultColor, r.inputBGColor, false)
-		r.out.WriteStr(" ")
-		word = strings.TrimPrefix(word, " ")
-	}
-
-	// Is last char whitespace
-	traillingWhitespace := false
-	if len(word) > 1 && strings.HasSuffix(word, " ") {
-		traillingWhitespace = true
-		word = strings.TrimSuffix(word, " ")
-	}
-
 	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
 	r.out.WriteStr(word)
 
-	if traillingWhitespace {
-		r.out.SetColor(DefaultColor, r.inputBGColor, false)
-		r.out.WriteStr(" ")
-	}
 }
 
 func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnostic) {
 	if lexer != nil && lexer.IsEnabled {
 		processed := lexer.Process(line)
 		var s = line
-		pos := 0
+		line := 0
+		col := 0
 		for _, v := range processed {
 			a := strings.SplitAfter(s, v.Text)
 			s = strings.TrimPrefix(s, a[0])
 
-			if hasDiagnostic(pos, diagnostics) {
+			if hasDiagnostic(line, col, diagnostics) {
 				r.renderDiagnostic(a[0])
 			} else {
 				r.out.SetColor(v.Color, r.inputBGColor, false)
 				r.out.WriteStr(a[0])
 			}
 
-			pos += len(a[0])
+			if strings.Contains(a[0], "\n") || strings.Contains(a[0], "\r\n") {
+				line++
+				col = 0
+			} else {
+				col += len(a[0])
+			}
+
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
