@@ -313,13 +313,13 @@ func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, document *Do
 	return r.move(cursorPos+completionLen, cursorPos)
 }
 
-func (r *Render) renderDiagnostic(word string) {
-	if len(word) < 1 {
+func (r *Render) renderDiagnosticChar(s string) {
+	if len(s) < 1 {
 		return
 	}
 
 	r.out.SetColor(r.diagnosticsTextColor, r.diagnosticsBGColor, false)
-	r.out.WriteStr(word)
+	r.out.WriteStr(s)
 
 }
 
@@ -333,24 +333,31 @@ func (r *Render) renderLine(line string, lexer *Lexer, diagnostics []lsp.Diagnos
 			a := strings.SplitAfter(s, v.Text)
 			s = strings.TrimPrefix(s, a[0])
 
-			if hasDiagnostic(line, col, diagnostics) {
-				r.renderDiagnostic(a[0])
-			} else {
-				r.out.SetColor(v.Color, r.inputBGColor, false)
-				r.out.WriteStr(a[0])
-			}
+			r.renderWord(a[0], v, diagnostics, line, col)
 
 			if strings.Contains(a[0], "\n") || strings.Contains(a[0], "\r\n") {
 				line++
 				col = 0
 			} else {
-				col += len(a[0])
+				// We have to convert to rune to count the characters and now the bytes. あ is one character, even though it's 3 bytes.
+				col += len([]rune(a[0]))
 			}
-
 		}
 	} else {
 		r.out.SetColor(r.inputTextColor, r.inputBGColor, false)
 		r.out.WriteStr(line)
+	}
+}
+
+func (r *Render) renderWord(word string, e LexerElement, diagnostics []lsp.Diagnostic, line, col int) {
+	runes := []rune(word)
+	for i, c := range runes {
+		if hasDiagnostic(line, col+i, diagnostics) {
+			r.renderDiagnosticChar(string(c))
+		} else {
+			r.out.SetColor(e.Color, r.inputBGColor, false)
+			r.out.WriteStr(string(c))
+		}
 	}
 }
 
