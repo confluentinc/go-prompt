@@ -306,6 +306,12 @@ func TestHasDiagnostic(t *testing.T) {
 	require.True(t, hasDiagnostic(0, 20, diagnostics))
 	require.True(t, hasDiagnostic(0, 30, diagnostics))
 
+	// Test multibytes chars
+	stmt := "ああああああああああ"
+	pos := len([]rune(stmt))
+	require.True(t, hasDiagnostic(0, pos, diagnostics))
+	require.False(t, hasDiagnostic(0, pos+1, diagnostics))
+
 	// Test outside of range
 	require.False(t, hasDiagnostic(0, -1, diagnostics))
 	require.False(t, hasDiagnostic(0, 11, diagnostics))
