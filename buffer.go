@@ -180,6 +180,17 @@ func (b *Buffer) JoinNextLine(separator string) {
 	}
 }
 
+// If this is a multiline buffer and the cursor is not at the top line
+func (b *Buffer) HasPrevLine() bool {
+	return b.NewLineCount() > 0 && b.Document().CursorPositionRow() > 0
+}
+
+// If this is a multiline buffer and the cursor is not at the last line
+func (b *Buffer) HasNextLine() bool {
+	newLineCount := b.NewLineCount()
+	return newLineCount > 0 && b.Document().CursorPositionRow() < newLineCount
+}
+
 // SwapCharactersBeforeCursor swaps the last two characters before the cursor.
 func (b *Buffer) SwapCharactersBeforeCursor() {
 	if b.cursorPosition >= 2 {
