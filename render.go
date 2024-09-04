@@ -19,8 +19,8 @@ type Render struct {
 	title              string
 	row                uint16
 	col                uint16
-
-	previousCursor int
+	hideCompletion     bool
+	previousCursor     int
 
 	// colors,
 	prefixTextColor              Color
@@ -92,12 +92,13 @@ func (r *Render) UpdateWinSize(ws *WinSize) {
 
 // Render completions in the dropdown and returns the lenth that the cursor has to be moved back
 func (r *Render) renderCompletion(completions *CompletionManager, cursorPos int) int {
-	completionsSelectedIdx := completions.GetSelectedIdx()
-	completionsVerticalScroll := completions.GetVerticalScroll()
 	suggestions := completions.GetSuggestions()
-	if len(suggestions) == 0 {
+	if len(suggestions) == 0 || r.hideCompletion {
 		return 0
 	}
+
+	completionsSelectedIdx := completions.GetSelectedIdx()
+	completionsVerticalScroll := completions.GetVerticalScroll()
 	prefix := r.getCurrentPrefix()
 	formatted, width := formatSuggestions(
 		suggestions,

@@ -302,10 +302,7 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 		p.history.Clear()
 	case Up, ControlP:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
-
-			// if this is a multiline buffer and the cursor is not at the top line,
-			// then we just move up the cursor
-			if p.buf.NewLineCount() > 0 && p.buf.Document().CursorPositionRow() > 0 {
+			if p.buf.HasPrevLine() {
 				// this is a multiline buffer
 				// move the cursor up by one line
 				p.buf.CursorUp(1)
@@ -318,15 +315,7 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 		}
 	case Down, ControlN:
 		if !completing { // Don't use p.completion.Completing() because it takes double operation when switch to selected=-1.
-
-			// if this is a multiline buffer and the cursor is not at the top line,
-			// then we just move up the cursor
-			// debug.Log(fmt.Sprintln("NewLineCount:", p.buf.NewLineCount()))
-			// debug.Log(fmt.Sprintln("CursorPositionRow:", p.buf.Document().CursorPositionRow()))
-
-			if p.buf.NewLineCount() > 0 && p.buf.Document().CursorPositionRow() < (p.buf.NewLineCount()) {
-				// this is a multiline buffer
-				// move the cursor up by one line
+			if p.buf.HasNextLine() {
 				p.buf.CursorDown(1)
 			} else if newBuf, changed := p.history.Newer(p.buf); changed {
 
@@ -348,17 +337,25 @@ func (p *Prompt) feed(b []byte) (shouldExit bool, exec *Exec) {
 		// special characters that mess with the rendering (e.g. the escape char)
 		cleanedInput := RemoveASCIISequences(b)
 		p.buf.InsertText(string(cleanedInput), false, true)
+
+		// By pressing anykey which isn't mapped we again show completions if they were hidden (by pressing escape)
+		p.renderer.hideCompletion = false
 	}
 
 	shouldExit = p.handleKeyBinding(key)
 	return
 }
 
-func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
+// Wheter or not we'll enter completions when the user presses down. We only navigate into completions if there's no new line below(multiline buffer) and history is not active
+// (we're not browsing history with arros).
+func (p *Prompt) completeOnDown() bool {
+	return p.completionOnDown && !p.history.HasNewer() && !p.buf.HasNextLine()
+}
 
+func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
 	switch key {
 	case Down:
-		if completing || (p.completionOnDown && !p.history.HasNewer()) {
+		if completing || p.completeOnDown() {
 			p.completion.Next()
 		}
 	case Tab, ControlI:
@@ -369,6 +366,9 @@ func (p *Prompt) handleCompletionKeyBinding(key Key, completing bool) {
 		}
 	case BackTab:
 		p.completion.Previous()
+	case Escape:
+		p.completion.Reset()
+		p.renderer.hideCompletion = true
 	default:
 		if s, ok := p.completion.GetSelectedSuggestion(); ok {
 			w := p.buf.Document().GetWordBeforeCursorUntilSeparator(p.completion.wordSeparator)
