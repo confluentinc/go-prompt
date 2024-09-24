@@ -238,7 +238,7 @@ func TestDiagnosticsDetail(t *testing.T) {
 	}
 
 	expected := "\nError 1   Error 2   Error 3   "
-	actual := diagnosticsDetail(diagnostics, 10)
+	actual := diagnosticsDetail(diagnostics, 10, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with a single diagnostic
@@ -247,7 +247,7 @@ func TestDiagnosticsDetail(t *testing.T) {
 	}
 
 	expected = "\nSingle Error        "
-	actual = diagnosticsDetail(diagnostics, 10)
+	actual = diagnosticsDetail(diagnostics, 10, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with multiple diagnostics with multiline messages
@@ -258,7 +258,7 @@ func TestDiagnosticsDetail(t *testing.T) {
 	}
 
 	expected = "\nError 1   Nextline  Error 2   Nextline  Error 3   Nextline  "
-	actual = diagnosticsDetail(diagnostics, 10)
+	actual = diagnosticsDetail(diagnostics, 10, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with a single diagnostic  with multiline messages
@@ -267,16 +267,41 @@ func TestDiagnosticsDetail(t *testing.T) {
 	}
 
 	expected = "\nA long error        Nextline  " // Here the first error overflow the column width (12 chars and 10 columns)
-	actual = diagnosticsDetail(diagnostics, 10)
+	actual = diagnosticsDetail(diagnostics, 10, 10)
 	require.Equal(t, expected, actual)
 
 	// Test with no diagnostics
 	diagnostics = []lsp.Diagnostic{}
 
 	expected = ""
-	actual = diagnosticsDetail(diagnostics, 10)
+	actual = diagnosticsDetail(diagnostics, 10, 10)
 	require.Equal(t, expected, actual)
 
+	require.Equal(t, expected, actual)
+
+	// Test truncate text if too diagnostics overflow the row count
+	diagnostics = []lsp.Diagnostic{
+		{Message: "Row 1"},
+		{Message: "Row 2"},
+		{Message: "Row 3"},
+		{Message: "Row 4"},
+		{Message: "Row 5"},
+		{Message: "Row 6"},
+	}
+
+	expected = "\nRow 1     Row 2     Row 3     Row 4     Row 5  ..."
+	actual = diagnosticsDetail(diagnostics, 5, 10)
+	require.Equal(t, expected, actual)
+
+	// Test truncate text if messages wil lead to too many rows
+	diagnostics = []lsp.Diagnostic{
+		{Message: "Row 1\nRow 2"},
+		{Message: "Row 3\nRow 4"},
+		{Message: "Row 5\nRow 6"},
+	}
+
+	expected = "\nRow 1     Row 2     Row 3     Row 4     Row 5  ..."
+	actual = diagnosticsDetail(diagnostics, 5, 10)
 	require.Equal(t, expected, actual)
 }
 

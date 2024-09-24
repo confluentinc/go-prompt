@@ -90,6 +90,7 @@ func main() {
 		prompt.OptionSelectedSuggestionBGColor(prompt.LightGray),
 		prompt.OptionSuggestionBGColor(prompt.DarkGray),
 		prompt.OptionSetLexer(Lexer), // We set the lexer so that we can see that diagnostics highlighting takes precedence if it is set
+		prompt.OptionDiagnosticsMaxRow(10),
 		prompt.OptionDiagnosticsDetailsBGColor(prompt.Red),
 		prompt.OptionDiagnosticsDetailsTextColor(prompt.White),
 		prompt.OptionSetStatementTerminator(func(lastKeyStroke prompt.Key, buffer *prompt.Buffer) bool {
