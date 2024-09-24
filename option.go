@@ -131,6 +131,14 @@ func OptionSuggestionBGColor(x Color) Option {
 	}
 }
 
+// OptionDiagnosticsMaxRow to set the maximun amount of rows in a
+func OptionDiagnosticsMaxRow(x uint16) Option {
+	return func(p IPrompt) error {
+		p.Renderer().diagnosticsMaxRow = x
+		return nil
+	}
+}
+
 // OptionDiagnosticsTextColor to change a color of text which is input by user.
 func OptionDiagnosticsTextColor(x Color) Option {
 	return func(p IPrompt) error {
@@ -344,6 +352,7 @@ func New(executor Executor, completer Completer, opts ...Option) (IPrompt, error
 			previewSuggestionBGColor:     DefaultColor,
 			suggestionTextColor:          White,
 			suggestionBGColor:            Cyan,
+			diagnosticsMaxRow:            6,
 			diagnosticsTextColor:         White,
 			diagnosticsBGColor:           Red,
 			diagnosticsDetailsTextColor:  Red,
