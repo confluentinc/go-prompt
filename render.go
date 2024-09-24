@@ -31,6 +31,7 @@ type Render struct {
 	previewSuggestionBGColor     Color
 	suggestionTextColor          Color
 	suggestionBGColor            Color
+	diagnosticsMaxRow            uint16
 	diagnosticsTextColor         Color
 	diagnosticsBGColor           Color
 	diagnosticsDetailsTextColor  Color
@@ -177,7 +178,7 @@ func (r *Render) ClearScreen() {
 }
 
 // Render renders to the console.
-func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *CompletionManager, lexer *Lexer, diagnostics []lsp.Diagnostic) (tracedBackLines int) {
+func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completionManager *CompletionManager, lexer *Lexer, diagnostics []lsp.Diagnostic) (tracedBackLines int) {
 	// In situations where a pseudo tty is allocated (e.g. within a docker container),
 	// window size via TIOCGWINSZ is not immediately available and will result in 0,0 dimensions.
 	if r.col == 0 {
@@ -218,8 +219,8 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 	cursorPos := r.move(cursorEndPos, translatedBufferCursorPos)
 
 	// If suggestion is select for preview
-	if suggest, ok := completion.GetSelectedSuggestion(); ok {
-		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completion.wordSeparator)))
+	if suggest, ok := completionManager.GetSelectedSuggestion(); ok {
+		cursorPos = r.backward(cursorPos, runewidth.StringWidth(buffer.Document().GetWordBeforeCursorUntilSeparator(completionManager.wordSeparator)))
 
 		r.out.SetColor(r.previewSuggestionTextColor, r.previewSuggestionBGColor, false)
 		r.out.WriteStr(suggest.Text)
@@ -249,35 +250,42 @@ func (r *Render) Render(buffer *Buffer, lastKeyStroke Key, completion *Completio
 		cursorPos = r.move(cursorEndPosWithInsertedSuggestion, cursorPosBehindSuggestion)
 	}
 
-	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completion or completion + diagnostics
-	completionLen := r.renderCompletion(completion, cursorPos)
+	// Render completions - We have to store completionLen to move back the cursor to the right position after rendering the completionManager or completionManager + diagnostics
+	completionLen := r.renderCompletion(completionManager, cursorPos)
 
-	// Render dianostics messages - showing error detail at the bottom of the screen.
-	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen, buffer.Document(), diagnostics)
+	// Render diagnostics messages - showing error detail at the bottom of the screen.
+	cursorPos = r.renderDiagnosticsMsg(cursorPos, completionLen, r.diagnosticsMaxRow, buffer.Document(), diagnostics)
 
 	r.previousCursor = cursorPos
 	return traceBackLines
 }
 
-func diagnosticsDetail(diagnostics []lsp.Diagnostic, maxCol int) string {
+func diagnosticsDetail(diagnostics []lsp.Diagnostic, rowsToDisplay, maxCol int) string {
+	formattedDiagnostic := ""
 	var messages []string
 
 	for _, diagnostic := range diagnostics {
 		if len(diagnostic.Message) > 0 {
 			lines := strings.Split(diagnostic.Message, "\n")
+			// We need to manually format each line here so that we append empty spaces to lines that doesn't fill the whole row, for it to look like "error box component" and not always have a different format depending on the error message.
 			for _, line := range lines {
-				rest := maxCol - runewidth.StringWidth(line)%maxCol // we use string width here because we need to know the width of the string, characters can have different widths in the terminal (e.g. a, け, あ)
-				lineWithBackground := line + strings.Repeat(" ", rest)
+				rest := maxCol - runewidth.StringWidth(line)%maxCol    // we use string width here because we need to know the width of the string, characters can have different widths in the terminal (e.g. a, け, あ)
+				lineWithBackground := line + strings.Repeat(" ", rest) // we fill the rest, regardless of this fills one row, or two rows and so on
 				messages = append(messages, lineWithBackground)
 			}
 		}
 	}
 
 	if len(messages) > 0 {
-		return "\n" + strings.Join(messages, "")
+		formattedDiagnostic = "\n" + strings.Join(messages, "")
 	}
 
-	return ""
+	// We need to truncate messages which are too long. We will display the same amount of rows that completions are configured to use.
+	if runewidth.StringWidth(formattedDiagnostic) > maxCol*rowsToDisplay {
+		formattedDiagnostic = runewidth.Truncate(formattedDiagnostic, maxCol*rowsToDisplay, "...")
+	}
+
+	return formattedDiagnostic
 }
 
 func hasDiagnostic(line, col int, diagnostics []lsp.Diagnostic) bool {
@@ -295,10 +303,10 @@ func hasDiagnostic(line, col int, diagnostics []lsp.Diagnostic) bool {
 }
 
 // Render diagnostics and returns the length that the cursor has to be moved back
-func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, document *Document, diagnostics []lsp.Diagnostic) int {
+func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, diagnosticsMaxRows uint16, document *Document, diagnostics []lsp.Diagnostic) int {
 	if document != nil && document.Text != "" {
 		if line, col := document.TranslateIndexToPosition(document.cursorPosition); hasDiagnostic(line, col, diagnostics) {
-			diagnosticsText := diagnosticsDetail(diagnostics, int(r.col))
+			diagnosticsText := diagnosticsDetail(diagnostics, int(r.col), int(diagnosticsMaxRows))
 			// Why we do -1 here: We currently fill each new diagnostic line with empty spaces to create the colored background.
 			// However, the terminal is lazy and will not move the cursor to the next position/line (which would create a new line).
 			// Because of that, we adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
