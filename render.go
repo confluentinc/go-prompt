@@ -306,7 +306,7 @@ func hasDiagnostic(line, col int, diagnostics []lsp.Diagnostic) bool {
 func (r *Render) renderDiagnosticsMsg(cursorPos, completionLen int, diagnosticsMaxRows uint16, document *Document, diagnostics []lsp.Diagnostic) int {
 	if document != nil && document.Text != "" {
 		if line, col := document.TranslateIndexToPosition(document.cursorPosition); hasDiagnostic(line, col, diagnostics) {
-			diagnosticsText := diagnosticsDetail(diagnostics, int(r.col), int(diagnosticsMaxRows))
+			diagnosticsText := diagnosticsDetail(diagnostics, int(diagnosticsMaxRows), int(r.col))
 			// Why we do -1 here: We currently fill each new diagnostic line with empty spaces to create the colored background.
 			// However, the terminal is lazy and will not move the cursor to the next position/line (which would create a new line).
 			// Because of that, we adjust the cursor position doing -1 because that's the actual position of the terminal cursor.
