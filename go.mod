@@ -1,6 +1,6 @@
 module github.com/confluentinc/go-prompt
 
-go 1.22.11
+go 1.22.12
 
 require (
 	github.com/mattn/go-colorable v0.1.7
