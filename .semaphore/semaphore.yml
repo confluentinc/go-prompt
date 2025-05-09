@@ -3,7 +3,7 @@ name: go-prompt
 
 agent:
   machine:
-    type: s1-prod-ubuntu20-04-amd64-1
+    type: s1-prod-ubuntu24-04-amd64-1
 
 auto_cancel:
   running:
@@ -57,8 +57,16 @@ blocks:
         - name: windows/amd64
           commands:
             - checkout
+            # Windows commands copied over from the CLI https://github.com/confluentinc/cli/blob/ad29179c0eb3df79dfd1c758cf14380ffa1739a2/.semaphore/semaphore.yml#L97
             # https://confluentinc.atlassian.net/browse/DP-9532
-            - choco install -y golang --version $(Get-Content .go-version)
+            # Do not install Go with Chocolatey since it is community maintained and may not have the latest version
+            - Invoke-WebRequest -OutFile Go.zip -Uri https://go.dev/dl/go$(Get-Content .go-version).windows-amd64.zip -UseBasicParsing
+            - Expand-Archive Go.zip -DestinationPath C:\
+            - $Env:PATH = "C:\Go\bin;C:\Users\semaphore\go\bin;$Env:PATH"
+            - $Env:EXISTING_FLAGS = $(go env CGO_LDFLAGS)
+            - go env -w CGO_LDFLAGS="-fstack-protector $Env:EXISTING_FLAGS"
+            - $Env:GOCOVERDIR = "test/coverage"
+            - New-Item $Env:GOCOVERDIR -ItemType Directory
             - go install gotest.tools/gotestsum@v1.8.2
             - gotestsum --junitfile test-report.xml -- -v ./...
       epilogue:
