@@ -11,7 +11,7 @@ require (
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/stretchr/testify v1.8.2
 	golang.org/x/sys v0.6.0
-	pgregory.net/rapid v0.5.5
+	pgregory.net/rapid v1.2.0
 )
 
 require (
