@@ -8,7 +8,7 @@ import (
 	"unicode/utf8"
 	"unsafe"
 
-	tty "github.com/mattn/go-tty"
+	tty "github.com/mattn/go-tty/v2"
 )
 
 const maxReadBytes = 1024
