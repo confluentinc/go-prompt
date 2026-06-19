@@ -5,7 +5,7 @@ go 1.22.12
 require (
 	github.com/mattn/go-colorable v0.1.15
 	github.com/mattn/go-runewidth v0.0.24
-	github.com/mattn/go-tty v0.0.8
+	github.com/mattn/go-tty/v2 v2.0.1
 	github.com/pkg/term v1.2.0-beta.2
 	github.com/samber/lo v1.53.0
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
