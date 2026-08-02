@@ -1,10 +1,10 @@
 module github.com/confluentinc/go-prompt
 
-go 1.22.12
+go 1.23
 
 require (
 	github.com/mattn/go-colorable v0.1.15
-	github.com/mattn/go-runewidth v0.0.24
+	github.com/mattn/go-runewidth v0.0.27
 	github.com/mattn/go-tty v0.0.8
 	github.com/pkg/term v1.2.0-beta.2
 	github.com/samber/lo v1.53.0
