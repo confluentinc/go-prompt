@@ -10,7 +10,7 @@ require (
 	github.com/samber/lo v1.53.0
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.29.0
+	golang.org/x/sys v0.44.0
 	pgregory.net/rapid v0.7.2
 )
 
