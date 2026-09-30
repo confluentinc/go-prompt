@@ -2,10 +2,6 @@ name: go-prompt
 lang: go
 git:
   enable: true
-  hook:
-    enable: true
-github:
-  enable: true
 gitignore:
   enable: true
 semaphore:
